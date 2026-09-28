@@ -21,7 +21,7 @@ bookingApp.get("/:id", async (c) => {
       .from("bookings")
       .select("*")
       .eq("booking_id", c.req.param("id"))
-      .maybeSingle();
+      .single();
     if (error) throw error;
     if (!data) return c.json({ error: "Booking not found" }, 404);
     return c.json(data);
@@ -33,10 +33,10 @@ bookingApp.get("/:id", async (c) => {
 
 bookingApp.post("/", bookingValidator, async (c) => {
   try {
-    const body: NewBooking = c.req.valid("json");
+    const bookingBody: NewBooking = c.req.valid("json");
     const { data, error } = await supabase
       .from("bookings")
-      .insert({ ...body, status: body.status ?? "pending" })
+      .insert({ ...bookingBody, status: bookingBody.status ?? "pending" })
       .select("*")
       .single();
     if (error?.code === "23505") {
@@ -53,13 +53,13 @@ bookingApp.post("/", bookingValidator, async (c) => {
 bookingApp.put("/:id", bookingValidator, async (c) => {
   try {
     const id = c.req.param("id");
-    const body: NewBooking = c.req.valid("json");
+    const bookingBody: NewBooking = c.req.valid("json");
     const { data, error } = await supabase
       .from("bookings")
-      .update({ ...body, booking_id: id, status: body.status ?? "pending" })
+      .update({ ...bookingBody, booking_id: id, status: bookingBody.status ?? "pending" })
       .eq("booking_id", id)
       .select("*")
-      .maybeSingle();
+      .single();
     if (error) throw error;
     if (!data) return c.json({ error: "Booking not found" }, 404);
     return c.json(data);
@@ -76,7 +76,7 @@ bookingApp.delete("/:id", async (c) => {
       .delete()
       .eq("booking_id", c.req.param("id"))
       .select("*")
-      .maybeSingle();
+      .single();
     if (error) throw error;
     if (!data) return c.json({ error: "Booking not found" }, 404);
     return c.json(data);
