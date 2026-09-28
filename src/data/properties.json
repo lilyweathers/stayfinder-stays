@@ -30,5 +30,13 @@
     "location": "Malmö, Sweden",
     "price_per_night": 950,
     "max_guests": 3
+  },
+  {
+    "title": "Cozy apartment",
+    "description": "A bright apartment close to the city center.",
+    "location": "Stockholm, Sweden",
+    "price_per_night": 850,
+    "max_guests": 2,
+    "property_id": "property_1005"
   }
 ]

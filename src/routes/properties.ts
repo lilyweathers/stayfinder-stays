@@ -4,13 +4,17 @@ import {
   partialPropertyValidator,
   propertyValidator,
 } from "../validators/propertyValidator.js";
+import { supabase } from "../lib/supabase.js";
 
 const propertiesApp = new Hono({ strict: false });
 const fileName = "properties.json";
 
 propertiesApp.get("/", async (c) => {
   try {
-    return c.json(await readJsonFile<Property>(fileName));
+    const { data, error } = await supabase.from("properties").select("*");
+
+    if (!error) { return c.json(data) }
+    throw error;
   } catch (error) {
     console.error("Failed to read properties", error);
     return c.json({ error: "Failed to read properties" }, 500);
