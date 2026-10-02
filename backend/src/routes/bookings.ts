@@ -21,7 +21,7 @@ bookingApp.get("/:id", async (c) => {
       .from("bookings")
       .select("*")
       .eq("booking_id", c.req.param("id"))
-      .single();
+      .maybeSingle();
     if (error) throw error;
     if (!data) return c.json({ error: "Booking not found" }, 404);
     return c.json(data);
@@ -59,7 +59,7 @@ bookingApp.put("/:id", bookingValidator, async (c) => {
       .update({ ...bookingBody, booking_id: id, status: bookingBody.status ?? "pending" })
       .eq("booking_id", id)
       .select("*")
-      .single();
+      .maybeSingle();
     if (error) throw error;
     if (!data) return c.json({ error: "Booking not found" }, 404);
     return c.json(data);
@@ -76,7 +76,7 @@ bookingApp.delete("/:id", async (c) => {
       .delete()
       .eq("booking_id", c.req.param("id"))
       .select("*")
-      .single();
+      .maybeSingle();
     if (error) throw error;
     if (!data) return c.json({ error: "Booking not found" }, 404);
     return c.json(data);

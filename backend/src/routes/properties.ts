@@ -24,7 +24,7 @@ propertiesApp.get("/:id", async (c) => {
       .from("properties")
       .select("*")
       .eq("property_id", c.req.param("id"))
-      .single();
+      .maybeSingle();
     if (error) throw error;
     if (!data) return c.json({ error: "Property not found" }, 404);
     return c.json(data);
@@ -60,7 +60,7 @@ propertiesApp.patch("/:id", partialPropertyValidator, async (c) => {
       .update({ ...propertyBody, property_id: id })
       .eq("property_id", id)
       .select("*")
-      .single();
+      .maybeSingle();
     if (error) throw error;
     if (!data) return c.json({ error: "Property not found" }, 404);
     return c.json(data);
@@ -77,7 +77,7 @@ propertiesApp.delete("/:id", async (c) => {
       .delete()
       .eq("property_id", c.req.param("id"))
       .select("*")
-      .single();
+      .maybeSingle();
     if (error) throw error;
     if (!data) return c.json({ error: "Property not found" }, 404);
     return c.json(data);

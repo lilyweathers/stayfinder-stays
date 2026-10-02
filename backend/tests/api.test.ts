@@ -9,6 +9,22 @@ const sourceDataDirectory = path.resolve(process.cwd(), "src", "data");
 
 const { default: app } = await import("../src/app.js");
 
+// Match PostgREST's array responses and its singular-response Accept header.
+function databaseRows(rows: unknown[], init: RequestInit): Response {
+  const accept = new Headers(init.headers).get("accept");
+  if (accept === "application/vnd.pgrst.object+json") {
+    if (rows.length !== 1) {
+      return Response.json({
+        code: "PGRST116",
+        message: "Cannot coerce the result to a single JSON object",
+        details: `The result contains ${rows.length} rows`,
+      }, { status: 406 });
+    }
+    return Response.json(rows[0]);
+  }
+  return Response.json(rows);
+}
+
 test("root identifies the API", async () => {
   const response = await app.request("/");
   assert.equal(response.status, 200);
@@ -19,11 +35,11 @@ test("properties can be listed and fetched by id", async (t) => {
   const fixtures = JSON.parse(await fs.readFile(
     path.join(sourceDataDirectory, "properties.json"), "utf8",
   )) as Property[];
-  t.mock.method(globalThis, "fetch", async (input: string | URL | Request) => {
+  t.mock.method(globalThis, "fetch", async (input: string | URL | Request, init: RequestInit) => {
     const url = new URL(String(input));
     assert.equal(url.pathname, "/rest/v1/properties");
     const id = url.searchParams.get("property_id");
-    return Response.json(id ? fixtures.filter((item) => `eq.${item.property_id}` === id) : fixtures);
+    return databaseRows(id ? fixtures.filter((item) => `eq.${item.property_id}` === id) : fixtures, init);
   });
   const listResponse = await app.request("/properties");
   assert.equal(listResponse.status, 200);
@@ -32,6 +48,7 @@ test("properties can be listed and fetched by id", async (t) => {
 
   const itemResponse = await app.request("/properties/property_1001");
   assert.equal(itemResponse.status, 200);
+  assert.deepEqual(await itemResponse.json(), fixtures.find((item) => item.property_id === "property_1001"));
 });
 
 test("booking CRUD uses Supabase", async (t) => {
@@ -53,7 +70,7 @@ test("booking CRUD uses Supabase", async (t) => {
       const payload = JSON.parse(String(init.body));
       assert.deepEqual(payload, { ...body, status: "pending" });
       stored = { ...payload, booking_id: "generated-booking-id", status: "pending" };
-      return Response.json(stored);
+      return databaseRows([stored], init);
     }
     const filter = url.searchParams.get("booking_id");
     if (filter) assert.equal(filter, "eq.generated-booking-id");
@@ -68,7 +85,7 @@ test("booking CRUD uses Supabase", async (t) => {
       assert.ok(filter);
       stored = undefined;
     }
-    return Response.json(result);
+    return databaseRows(result, init);
   });
   const createResponse = await app.request("/bookings", {
     method: "POST",
@@ -143,7 +160,7 @@ test("property writes use Supabase and preserve the route ID", async (t) => {
         assert.deepEqual(JSON.parse(String(init.body)), { title: "Updated apartment", property_id: "generated-id" });
       }
     }
-    return Response.json(method === "POST" ? property : [property]);
+    return databaseRows([property], init);
   });
   const created = await app.request("/properties", {
     method: "POST", headers: { "content-type": "application/json" },
@@ -165,9 +182,9 @@ test("property writes use Supabase and preserve the route ID", async (t) => {
 
 test("missing properties return 404 and database errors return 500", async (t) => {
   let fail = false;
-  t.mock.method(globalThis, "fetch", async () => fail
+  t.mock.method(globalThis, "fetch", async (_input: unknown, init: RequestInit) => fail
     ? Response.json({ message: "Database unavailable", code: "XX000" }, { status: 400 })
-    : Response.json([]));
+    : databaseRows([], init));
   t.mock.method(console, "error", () => {});
   for (const method of ["GET", "PATCH", "DELETE"]) {
     const options = method === "PATCH"
@@ -190,9 +207,9 @@ test("booking routes handle missing rows, database failures, and duplicate IDs",
     check_out: "2026-10-12", guests: 2,
   };
   let errorCode: string | undefined;
-  t.mock.method(globalThis, "fetch", async () => errorCode
+  t.mock.method(globalThis, "fetch", async (_input: unknown, init: RequestInit) => errorCode
     ? Response.json({ code: errorCode, message: "Database error" }, { status: 400 })
-    : Response.json([]));
+    : databaseRows([], init));
   t.mock.method(console, "error", () => {});
   for (const method of ["GET", "PUT", "DELETE"]) {
     const options = method === "PUT"
