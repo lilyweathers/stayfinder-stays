@@ -1,72 +1,103 @@
 # StayFinder API
 
-A small REST API built with Hono, Node.js, and TypeScript. Properties and
-bookings are stored in JSON files for now; a later course step can replace this
-data layer with Supabase/PostgreSQL.
+A REST API built with Hono, Node.js, TypeScript, and Zod. Active property and
+booking routes use Supabase/PostgreSQL. The JSON files and JSON database helper
+are legacy assets; property tests still use the JSON property data as fixtures.
 
-## Requirements
+## Requirements and setup
 
-- Node.js 20 or newer
-- npm
+- Node.js 20 or newer and npm
+- A development Supabase project with `properties` and `bookings` tables
+- Database permissions that allow the intended queries
 
-## Run the project
-
-Run these commands from the `backend/` folder:
+Run from `backend/` in Bash:
 
 ```bash
-npm install
+npm ci
+cp -n .env.example .env
+```
+
+Skip the copy command if `.env` already contains your configuration.
+
+| Variable | Purpose |
+| --- | --- |
+| `SUPABASE_URL` | Your Supabase project URL; required |
+| `SUPABASE_KEY` | The project API key used by the backend; required |
+| `HONO_PORT` | API port; defaults to `3000` |
+
+Keep `.env` in the `backend/` root and restart the API after changing it. Missing
+`HONO_PORT` uses port 3000. Keep `.env` local. Never commit real keys or put privileged keys in frontend
+code. The backend uses one configured Supabase client and does not yet forward
+an authenticated user's session to the database.
+
+```bash
 npm run dev
 ```
 
-Open `http://localhost:3000`. To use another port, copy `.env.example` to
-`.env` and change `HONO_PORT`.
+Open `http://localhost:3000`, or the port configured in `.env`. Stop with Ctrl+C.
+On Windows, Git Bash supports these commands. In PowerShell, use `npm.cmd` if
+execution policy blocks `npm.ps1`.
 
-### Windows: use Git Bash
-
-If PowerShell blocks `npm.ps1` because of its execution policy, open the
-project in Git Bash instead. The regular commands work there without changing
-the PowerShell policy:
+## Commands and tests
 
 ```bash
-cd /c/ws/webb25/stayfinder-stays/backend
-npm install
-npm run dev
+npm run typecheck  # check source TypeScript without generating output
+npm test           # compile and run API tests
+npm run build      # compile the API into dist/
+npm start          # run the compiled API
 ```
 
-## Useful commands
+The tests replace Supabase HTTP requests with fake PostgREST responses. They
+cover property and booking CRUD, validation, missing records, database errors,
+duplicate booking IDs, and preservation of IDs from update URLs. They use dummy
+environment values and do not read or modify your real Supabase database.
 
-```bash
-npm run dev        # development server with automatic restart
-npm test           # API integration tests (uses temporary JSON files)
-npm run typecheck  # TypeScript check
-npm run build      # compile to dist/
-npm start          # run the compiled server
-```
+Tests model list responses as arrays and singular responses as objects. Routes
+that may find no record use `maybeSingle()` so absence produces a `404`; create
+routes use `single()` because creation should return exactly one record.
 
 ## API routes
 
 | Method | Route | Purpose |
 | --- | --- | --- |
 | GET | `/` | API status text |
-| GET | `/properties` | List all properties |
+| GET | `/properties` | List properties |
 | GET | `/properties/:id` | Get one property |
 | POST | `/properties` | Create a property |
 | PATCH | `/properties/:id` | Partially update a property |
 | DELETE | `/properties/:id` | Delete a property |
-| GET | `/bookings` | List all bookings |
+| GET | `/bookings` | List bookings |
 | GET | `/bookings/:id` | Get one booking |
 | POST | `/bookings` | Create a booking |
-| PUT | `/bookings/:id` | Replace a booking |
+| PUT | `/bookings/:id` | Replace booking fields |
 | DELETE | `/bookings/:id` | Delete a booking |
 
-POST and update request bodies are validated with Zod. A new booking receives
-a generated `booking_id` and the status `pending` when those values are omitted.
-The id in a PUT URL always wins, so a client cannot change a booking's id.
+List routes return arrays. Successful create, single-record read, update, and
+delete routes return objects. Creates return `201`; other successful routes
+return `200`. Invalid bodies return `400` with an `errors` array, missing records
+return `404`, duplicate booking IDs return `409`, and database failures return
+`500`.
 
-### Example: create a booking
+## Database expectations
+
+The current code expects these columns:
+
+- `properties`: `property_id`, `title`, `description`, `location`,
+  `price_per_night`, `max_guests`
+- `bookings`: `booking_id`, `property_id`, `guest_name`, `guest_email`,
+  `check_in`, `check_out`, `guests`, `status`
+
+The database must generate property IDs and booking IDs when omitted. Booking
+status defaults to `pending` in the API when omitted. An update URL's ID takes
+precedence over an ID submitted in the body. Schema creation and migrations are
+not currently included in this repository.
+
+## Example request
+
+With the API running and an existing property ID, run in Bash:
 
 ```bash
-curl -X POST http://localhost:3000/bookings \
+curl -i -X POST http://localhost:3000/bookings \
   -H "Content-Type: application/json" \
   -d '{
     "property_id": "property_1001",
@@ -78,43 +109,14 @@ curl -X POST http://localhost:3000/bookings \
   }'
 ```
 
-## How the types are used
+This creates real data in the configured development database. Replace the
+property ID and dates as appropriate.
 
-- `NewBooking` describes incoming booking data. `booking_id` and `status` are
-  optional because the backend can supply them.
-- `Booking extends NewBooking` describes stored data, where both fields are
-  required.
-- `Partial<Property>` allows a PATCH request to update only selected fields.
+## Current assignment scope
 
-## Supabase: the short version
-
-Supabase is a backend platform built around PostgreSQL. It provides a hosted
-relational database, authentication, file storage, realtime features, and a web
-dashboard. In a later version, the functions in `src/lib/jsonDatabase.ts` can
-be replaced with Supabase queries while the Hono routes and validation remain
-largely the same. Do not add a Supabase key until the course asks for it, and
-never commit a service-role key to Git.
-
-## Preparation checklist
-
-- [x] Hono runs in Node.js with TypeScript
-- [x] Property data is stored in `src/data/properties.json`
-- [x] Booking data is stored in `src/data/bookings.json`
-- [x] Booking request bodies are validated with Zod
-- [x] GET, POST, PUT/PATCH, and DELETE routes persist JSON changes
-- [x] Supabase is summarized above for the next course step
-
-## Publish to your own GitHub
-
-The Git repository lives in `stayfinder-stays/`, one level above this folder.
-To publish to a new GitHub repository, create an empty repository on GitHub,
-then run these commands from the repository root:
-
-```bash
-git init
-git add .
-git commit -m "Set up StayFinder Hono API"
-git branch -M main
-git remote add origin https://github.com/YOUR-USERNAME/stayfinder-stays.git
-git push -u origin main
-```
+This is a starting point, not the completed assignment. API authentication,
+authorization, filtering, sorting, and booking business rules are not yet
+implemented. Booking date validation currently checks for nonempty strings,
+not valid dates or their order. Database policies cannot be verified by the
+mocked API tests. The Next.js frontend is a placeholder skeleton on port 3001; API integration
+is still to be implemented.

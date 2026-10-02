@@ -1,6 +1,11 @@
 node_modules/
 dist/
 .test-dist/
-.env
+.env*
+!.env.example
 *.log
 .DS_Store
+
+# Local API test credentials and cookie jars
+requests/local/
+*.cookies
