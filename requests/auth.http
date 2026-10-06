@@ -1,0 +1,51 @@
+@baseUrl = http://localhost:3000
+# Replace locally. Keep real credentials and cookie values out of Git.
+@email = REPLACE_WITH_YOUR_TEST_EMAIL
+@password = REPLACE_WITH_YOUR_TEST_PASSWORD
+@cookies = REPLACE_WITH_LOGIN_COOKIE_HEADER
+
+### Register (201; check confirmationRequired)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Login (200; copy cookie name=value pairs from Set-Cookie, without attributes)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Me (200)
+GET {{baseUrl}}/auth/me
+Cookie: {{cookies}}
+
+### Public properties (200 without cookies)
+GET {{baseUrl}}/properties
+
+### Anonymous bookings (401; ensure client has no automatic cookie jar)
+GET {{baseUrl}}/bookings
+
+### Protected bookings (200)
+GET {{baseUrl}}/bookings
+Cookie: {{cookies}}
+
+### Anonymous property creation (401)
+POST {{baseUrl}}/properties
+Content-Type: application/json
+
+{ "title": "Test apartment", "description": "A lecture test property", "location": "Stockholm", "price_per_night": 1200, "max_guests": 2 }
+
+### Authenticated property creation (201; writes real data)
+POST {{baseUrl}}/properties
+Cookie: {{cookies}}
+Content-Type: application/json
+
+{ "title": "Test apartment", "description": "A lecture test property", "location": "Stockholm", "price_per_night": 1200, "max_guests": 2 }
+
+### Logout (200; discard the saved cookie header afterwards)
+POST {{baseUrl}}/auth/logout
+Cookie: {{cookies}}
+
+### Anonymous me after logout (401)
+GET {{baseUrl}}/auth/me

@@ -1,10 +1,12 @@
 import { Hono } from "hono";
-import { supabase } from "../lib/supabase.js";
+import { requireAuth } from "../middleware/auth.js";
 import { bookingValidator } from "../validators/bookingValidator.js";
 
 const bookingApp = new Hono({ strict: false });
+bookingApp.use("*", requireAuth);
 
 bookingApp.get("/", async (c) => {
+  const supabase = c.get("supabase");
   try {
     const { data, error } = await supabase.from("bookings").select("*");
     if (error) throw error;
@@ -16,6 +18,7 @@ bookingApp.get("/", async (c) => {
 });
 
 bookingApp.get("/:id", async (c) => {
+  const supabase = c.get("supabase");
   try {
     const { data, error } = await supabase
       .from("bookings")
@@ -32,6 +35,7 @@ bookingApp.get("/:id", async (c) => {
 });
 
 bookingApp.post("/", bookingValidator, async (c) => {
+  const supabase = c.get("supabase");
   try {
     const bookingBody: NewBooking = c.req.valid("json");
     const { data, error } = await supabase
@@ -51,6 +55,7 @@ bookingApp.post("/", bookingValidator, async (c) => {
 });
 
 bookingApp.put("/:id", bookingValidator, async (c) => {
+  const supabase = c.get("supabase");
   try {
     const id = c.req.param("id");
     const bookingBody: NewBooking = c.req.valid("json");
@@ -70,6 +75,7 @@ bookingApp.put("/:id", bookingValidator, async (c) => {
 });
 
 bookingApp.delete("/:id", async (c) => {
+  const supabase = c.get("supabase");
   try {
     const { data, error } = await supabase
       .from("bookings")

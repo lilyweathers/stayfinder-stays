@@ -8,14 +8,21 @@ Mark an item complete only after implementing it, verifying the whole criterion,
 and recording the code location and test evidence. A passing mocked API test
 does not prove that PostgreSQL permissions or constraints work.
 
-## Current starting point
+## Current progress (2026-10-06)
 
-- Backend: Hono, TypeScript, Supabase CRUD routes, and Zod body validation.
-- Frontend: Next.js/TypeScript skeleton with a placeholder homepage.
-- Seven existing API tests pass using mocked database responses.
-- The user verified HTTP 200 and real records from both list endpoints.
-- Authentication, ownership, booking rules, frontend flows, and database policies
-  have not been verified as fulfilled assignment criteria.
+- Backend: request-specific Supabase SSR clients, cookie sessions and token refresh,
+  register/login/me/logout, credentialed CORS, and protected property writes and bookings.
+- Supabase: Email and signups enabled, email confirmation enabled, Site URL set to
+  http://localhost:3001. Basic RLS policies applied to properties and bookings.
+- Mailtrap Email Sandbox configured for development confirmation emails.
+- User-provided Postman responses demonstrate successful registration and login;
+  email confirmation was also verified in the Supabase dashboard.
+- Thirteen mocked API tests cover CRUD, auth cookies, anonymous denial, refresh,
+  token forwarding to database requests, validation, and CORS.
+- G1/G2 frontend flows and browser persistence remain unfinished. Live logout,
+  protected CRUD, and direct Supabase allow/deny tests still need recorded evidence.
+- Basic RLS allows all authenticated users shared access. VG1 ownership and the
+  other VG rules remain unfinished. No complete fullstack criterion is claimed here.
 
 ## G checklist
 

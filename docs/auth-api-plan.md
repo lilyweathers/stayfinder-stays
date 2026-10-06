@@ -1,6 +1,11 @@
 # Frontend, API, and authentication plan
 
-Status: preparation only. None of the proposed authentication routes, cookie
+Status: historical preparation plan. The three-lecture implementation is now
+documented in [auth-setup.md](auth-setup.md). Its basic RLS policies do not yet
+implement the ownership and VG rules proposed below. The remaining text records
+the original plan, not the current implementation.
+
+Original status: preparation only. None of the proposed authentication routes, cookie
 handling, CORS settings, or database policies below are implemented by this step.
 The planned approach uses Hono to manage Supabase Auth sessions in cookies.
 Compare it with the lesson code before implementing; this is a proposed project

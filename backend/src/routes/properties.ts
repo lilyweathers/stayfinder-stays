@@ -3,11 +3,12 @@ import {
   partialPropertyValidator,
   propertyValidator,
 } from "../validators/propertyValidator.js";
-import { supabase } from "../lib/supabase.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const propertiesApp = new Hono({ strict: false });
 
 propertiesApp.get("/", async (c) => {
+  const supabase = c.get("supabase");
   try {
     const { data, error } = await supabase.from("properties").select("*");
     if (error) throw error;
@@ -19,6 +20,7 @@ propertiesApp.get("/", async (c) => {
 });
 
 propertiesApp.get("/:id", async (c) => {
+  const supabase = c.get("supabase");
   try {
     const { data, error } = await supabase
       .from("properties")
@@ -34,7 +36,8 @@ propertiesApp.get("/:id", async (c) => {
   }
 });
 
-propertiesApp.post("/", propertyValidator, async (c) => {
+propertiesApp.post("/", requireAuth, propertyValidator, async (c) => {
+  const supabase = c.get("supabase");
   try {
     const propertyBody: NewProperty = c.req.valid("json");
     const { title, description, location, price_per_night, max_guests } = propertyBody;
@@ -51,7 +54,8 @@ propertiesApp.post("/", propertyValidator, async (c) => {
   }
 });
 
-propertiesApp.patch("/:id", partialPropertyValidator, async (c) => {
+propertiesApp.patch("/:id", requireAuth, partialPropertyValidator, async (c) => {
+  const supabase = c.get("supabase");
   try {
     const id = c.req.param("id");
     const propertyBody: Partial<NewProperty> = c.req.valid("json");
@@ -70,7 +74,28 @@ propertiesApp.patch("/:id", partialPropertyValidator, async (c) => {
   }
 });
 
-propertiesApp.delete("/:id", async (c) => {
+propertiesApp.put("/:id", requireAuth, propertyValidator, async (c) => {
+  const supabase = c.get("supabase");
+  try {
+    const id = c.req.param("id");
+    const propertyBody: Partial<NewProperty> = c.req.valid("json");
+    const { data, error } = await supabase
+      .from("properties")
+      .update({ ...propertyBody, property_id: id })
+      .eq("property_id", id)
+      .select("*")
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return c.json({ error: "Property not found" }, 404);
+    return c.json(data);
+  } catch (error) {
+    console.error("Failed to update property", error);
+    return c.json({ error: "Failed to update property" }, 500);
+  }
+});
+
+propertiesApp.delete("/:id", requireAuth, async (c) => {
+  const supabase = c.get("supabase");
   try {
     const { data, error } = await supabase
       .from("properties")

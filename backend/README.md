@@ -120,3 +120,10 @@ implemented. Booking date validation currently checks for nonempty strings,
 not valid dates or their order. Database policies cannot be verified by the
 mocked API tests. The Next.js frontend is a placeholder skeleton on port 3001; API integration
 is still to be implemented.
+
+## Supabase authentication
+
+See [the three-lecture setup guide](../docs/auth-setup.md) and
+[auth REST requests](../requests/auth.http). Public property reads stay open;
+property POST/PUT/PATCH/DELETE and all booking routes require authentication.
+The SQL policies must be applied in Supabase separately.
