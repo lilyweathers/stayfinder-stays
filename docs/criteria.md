@@ -2,7 +2,9 @@
 
 Target: all G1-G16 and all VG1-VG7. The assignment requires all G criteria and
 at least four VG criteria for VG; this project's chosen scope includes all seven.
-This document is a preparation checklist, not a claim that the features exist.
+This document tracks implementation and verification. Checked milestones below
+record completed work; a full criterion is checked only when all its requirements
+and verification are complete.
 
 Mark an item complete only after implementing it, verifying the whole criterion,
 and recording the code location and test evidence. A passing mocked API test
@@ -19,31 +21,83 @@ does not prove that PostgreSQL permissions or constraints work.
   email confirmation was also verified in the Supabase dashboard.
 - Thirteen mocked API tests cover CRUD, auth cookies, anonymous denial, refresh,
   token forwarding to database requests, validation, and CORS.
-- G1/G2 frontend flows and browser persistence remain unfinished. Live logout,
-  protected CRUD, and direct Supabase allow/deny tests still need recorded evidence.
+- G1/G2 frontend flows and browser persistence remain unfinished. The user confirmed
+  the live Postman me/logout sequence passed and reports successful property and
+  booking CRUD. Live anonymous API denial and public property reads are also
+  user-confirmed. The user also reports all 43 direct Supabase RLS assertions passed.
 - Basic RLS allows all authenticated users shared access. VG1 ownership and the
   other VG rules remain unfinished. No complete fullstack criterion is claimed here.
 
+## Completed milestones
+
+### Authentication (G1, G2, G14, G16)
+
+- [x] Install and configure Supabase SSR with a client per request.
+- [x] Type the Hono context with the Supabase client and authenticated user.
+- [x] Add register, login, current-user, and logout endpoints.
+- [x] Verify identity through getUser rather than trusting getSession.
+- [x] Store sessions in HttpOnly cookies and write updated cookies during refresh.
+- [x] Configure credentialed CORS for the frontend on localhost:3001.
+- [x] Enable Email sign-in and registration in the hosted Supabase project.
+- [x] Configure the frontend Site URL and retain email confirmation.
+- [x] Configure Mailtrap Email Sandbox for development confirmation emails.
+- [x] Verify live registration, email confirmation, and login through the dashboard
+  and user-provided Postman responses.
+- [x] Verify login cookies, me, logout cookie clearing, expired-token refresh,
+  invalid-session denial, and user-token forwarding with automated mocked tests.
+- [x] Verify live me and logout with recorded Postman results (user-confirmed
+  sequence on 2026-10-06; see evidence log).
+- [ ] Add frontend registration/login/logout controls and session display.
+- [ ] Verify persistence after browser reload.
+
+### Protected data (G6, G12, G15)
+
+- [x] Require authentication for property POST, PUT, PATCH, and DELETE.
+- [x] Keep property GET list and detail routes public.
+- [x] Require authentication for every booking route.
+- [x] Replace shared-client database calls with the request's Supabase client.
+- [x] Save reproducible basic policies in database/001_auth_rls.sql.
+- [x] Apply basic RLS policies and verify both tables have RLS enabled in Supabase.
+- [x] Verify anonymous protected routes return 401 in automated mocked tests.
+- [x] Verify authenticated property/booking CRUD and 404/database-error responses
+  in automated mocked tests.
+- [x] Verify real authenticated property and booking CRUD through API requests
+  (user-confirmed Postman tests on 2026-10-06; see evidence log).
+- [x] Verify anonymous denial through live API requests (user-confirmed Postman
+  checks on 2026-10-06; see evidence log).
+- [x] Verify direct Supabase reads/writes as anonymous and authenticated users
+  (user reports all 43 Postman assertions passed on 2026-10-06).
+- [ ] Add VG1 ownership: current policies give all logged-in users shared access.
+
+### Checks and supporting files
+
+- [x] Backend TypeScript check passes.
+- [x] All 13 backend automated tests pass (2026-10-06; Supabase responses mocked).
+- [x] Add auth REST request examples in requests/auth.http.
+- [x] Document dashboard, cookie, email, and Postman setup in docs/auth-setup.md.
+- [x] Commit and push the auth foundation to the repository (commit 8b6a432).
+- [ ] Complete submission requests covering all selected criteria, including VG denials.
+
 ## G checklist
 
-| Done | Criterion | Required result | Verification to record |
+| Complete | Criterion | Required result | Current progress and remaining verification |
 | --- | --- | --- | --- |
-| [ ] | G1 | Visitors can register, log in, and log out. | New account, valid login, rejected invalid login, logout. |
-| [ ] | G2 | Login survives reload; the app can identify the logged-in user. | Reload authenticated pages; expired or invalid session; logout followed by reload. |
-| [ ] | G3 | Navigation changes for authenticated and anonymous visitors. | Compare both states and verify changes after login/logout. |
-| [ ] | G4 | Everyone can view the property list and individual details. | Anonymous and authenticated list/detail visits; correct data for each ID. |
-| [ ] | G5 | Filter by location, maximum price, and guest count. | Each filter alone, combinations, boundary values, and no matches. |
-| [ ] | G6 | Property writes require authentication in both API and database. | Anonymous create/update/delete denied through API and direct database API; authenticated owner allowed under VG1. |
-| [ ] | G7 | An authenticated user can create a property using a frontend form. | Valid submission persists; invalid fields produce understandable errors. |
-| [ ] | G8 | Sort by ascending or descending price in the backend. | Call API directly for both orders; combine with filters. |
-| [ ] | G9 | Authenticated users can book from details; visitors are prompted to log in. | Both UI states; successful booking; anonymous direct API write denied. |
-| [ ] | G10 | Reject invalid bookings and show understandable form errors. | Invalid email, zero guests, invalid calendar dates, equal/reversed dates; test API and UI. |
-| [ ] | G11 | Show nights and total price before submission. | Known date/price example, changed dates, invalid dates; reconcile preview with VG6 server result. |
-| [ ] | G12 | Authenticated users can view, change, and delete bookings for a property. | Permitted CRUD flows and denied access; apply VG1 ownership and VG4/VG5 restrictions. |
-| [ ] | G13 | Loading, fetch-error, and missing-property views exist. | Slow request, failed request, and nonexistent property ID. |
-| [ ] | G14 | API returns appropriate status codes. | Success 200, creation 201, invalid input 400, anonymous 401, missing 404; forbidden 403 and booking conflict 409 where applicable. |
-| [ ] | G15 | Database permissions protect tables independently of the API. | Direct Supabase requests as anonymous user, guest A, guest B, and property owner; check reads and writes. |
-| [ ] | G16 | Backend and frontend data are typed. | Both typechecks pass; inspect request, response, database, session, and error types; include actual fields such as created_at. |
+| [ ] | G1 | Visitors can register, log in, and log out. | Backend endpoints implemented; registration, confirmation, and login verified live. Live me/logout sequence confirmed by the user; logout also covered by mocked tests. Frontend forms remain. |
+| [ ] | G2 | Login survives reload; the app can identify the logged-in user. | Cookie sessions, refresh, and me implemented and covered by mocked tests. Live me/logout sequence confirmed by the user. Frontend identity display and browser reload checks remain. |
+| [ ] | G3 | Navigation changes for authenticated and anonymous visitors. | Not implemented: frontend still has a placeholder homepage. |
+| [ ] | G4 | Everyone can view the property list and individual details. | Public list/detail API endpoints exist; anonymous live reads confirmed by the user. Frontend list/detail pages remain. |
+| [ ] | G5 | Filter by location, maximum price, and guest count. | Not implemented: property list does not apply location, price, or guest filters. |
+| [x] | G6 | Property writes require authentication in both API and database. | API guards and hosted basic RLS policies implemented. Live authenticated CRUD, anonymous API denial, and direct Supabase write restrictions confirmed by the user. Ownership is tracked under VG1. |
+| [ ] | G7 | An authenticated user can create a property using a frontend form. | Not implemented: no frontend property form. |
+| [ ] | G8 | Sort by ascending or descending price in the backend. | Not implemented: property list has no backend price sorting. |
+| [ ] | G9 | Authenticated users can book from details; visitors are prompted to log in. | Booking POST requires login; live booking creation confirmed by the user. Frontend booking form, detail flow, and login prompt remain. |
+| [ ] | G10 | Reject invalid bookings and show understandable form errors. | Zod validates email, positive guests, and required fields. Real calendar-date and date-order checks and frontend error display remain. |
+| [ ] | G11 | Show nights and total price before submission. | Not implemented: no frontend nights/price preview. |
+| [ ] | G12 | Authenticated users can view, change, and delete bookings for a property. | Protected booking CRUD implemented, covered by mocked tests, and confirmed live by the user. Frontend management, property-specific filtering, and selected VG restrictions remain. |
+| [ ] | G13 | Loading, fetch-error, and missing-property views exist. | API returns 404 for missing properties. Frontend loading, error, and missing-property pages remain. |
+| [ ] | G14 | API returns appropriate status codes. | Automated tests cover 200/201/400/401/403/404/409/500 cases. Complete live status-code verification and invalid-date coverage remain. |
+| [x] | G15 | Database permissions protect tables independently of the API. | RLS enabled and eight basic policies applied and verified in the dashboard. All 43 direct Supabase assertions passed according to the user's Postman report, covering anonymous restrictions and authenticated CRUD. |
+| [ ] | G16 | Backend and frontend data are typed. | Backend auth context and domain interfaces exist; backend typecheck passes. Database response typing and frontend request/response types remain. |
 
 ## VG checklist: all seven selected
 
@@ -105,11 +159,76 @@ For each completed criterion, record:
 
 | Criterion | Code/SQL paths | Successful case | Rejected/boundary case | Result/date | Explanation of rule location |
 | --- | --- | --- | --- | --- | --- |
-| Example: VG2 | Fill after implementation | Nonoverlapping booking | Overlap and concurrent overlap | Fill after verification | Explain API error and atomic database protection |
+| G1 (partial) | backend/src/routes/auth.ts; docs/auth-setup.md | Live registration, confirmation, and login | Invalid login observed; validation covered by mocked tests | 2026-10-06: user-provided Postman responses and dashboard | Supabase Auth verifies credentials; backend handles cookies. Frontend remains. |
+| G2 (partial) | backend/src/middleware/auth.ts; backend/tests/api.test.ts | Mocked login/me and token refresh | Mocked invalid session returns 401 | 2026-10-06: automated tests | Request client reads/writes cookies and verifies identity. Browser persistence remains. |
+| G6/G15 | backend/src/routes/properties.ts; database/001_auth_rls.sql; requests/supabase-rls.postman_collection.json | Authenticated API and direct Supabase CRUD; public property reads | Anonymous API denial; direct Supabase insert denial and hidden/unchanged rows | 2026-10-06: dashboard checks and user-confirmed live tests; all 43 direct assertions passed | API guards protect Hono routes; PostgreSQL RLS enforces permissions when Hono is bypassed. VG ownership remains. |
+| G12/G14 (partial) | backend/src/routes/bookings.ts; backend/tests/api.test.ts | Mocked authenticated CRUD | Mocked anonymous, missing, invalid, and duplicate cases | 2026-10-06: automated tests | Auth gates booking access; handlers return status codes. Frontend/live verification remain. |
+
+### Live Postman session verification ? 2026-10-06
+
+The user confirmed that the instructed three-request sequence worked. This is
+user-reported evidence; raw response exports/screenshots were not supplied.
+Requests used localhost:3000, Authorization: No Auth, no body, and Postman's
+saved login cookies.
+
+| Step | Request | Expected result confirmed by user |
+| --- | --- | --- |
+| 1 | GET /auth/me after login | 200 OK with the logged-in user |
+| 2 | POST /auth/logout | 200 OK with { "message": "Logged out" } |
+| 3 | GET /auth/me after logout | 401 Unauthorized with { "error": "Unauthorized" } |
+
+This completes the live me/logout milestone. Frontend login/logout flows and
+persistence after browser reload still need implementation and verification.
+No passwords, tokens, or cookie values are recorded here.
+
+### Live Postman CRUD verification - 2026-10-06
+
+The user reports that property and booking list/detail, create, update, and delete
+requests all work. The supplied screenshot shows the saved request names and
+methods, but does not show response statuses, bodies, or Runner assertions.
+This records user-reported successful CRUD, not an independently observed run of
+requests/crud-auth.postman_collection.json. The authenticated CRUD milestone is
+checked. Live anonymous denial was subsequently confirmed as recorded below.
+
+The screenshot labels login and logout as GET. The implemented auth endpoints
+use POST /auth/login and POST /auth/logout; saved request methods should match
+those endpoints.
+
+### Live Postman anonymous access verification - 2026-10-06
+
+The user confirmed completion of the instructed checks after POST /auth/logout,
+without logging in again, using No Auth and valid write bodies. This is
+user-reported evidence; raw response exports were not supplied.
+
+| Requests | Expected result confirmed by user |
+| --- | --- |
+| Property POST, PUT, PATCH, DELETE | 401 Unauthorized |
+| Booking GET list/detail, POST, PUT, DELETE | 401 Unauthorized |
+| Property GET list/detail | 200 OK |
+
+This completes the live anonymous API denial milestone. Direct Supabase
+permission checks were subsequently confirmed as recorded below.
+
+### Direct Supabase RLS verification - 2026-10-06
+
+The user reports all 43 assertions passed when running the 22-request collection
+requests/supabase-rls.postman_collection.json with stored cookies disabled.
+This is user-reported Runner evidence; a raw results export was not supplied.
+
+The collection bypasses Hono and verifies public property reads, anonymous
+booking reads returning no rows, anonymous inserts rejected with code 42501,
+and anonymous updates/deletes affecting no rows. Authenticated reads confirm
+those denied writes left the records unchanged. Authenticated creation,
+updates with persisted values, and deletion are verified for both tables.
+Temporary records are deleted and the direct test session is invalidated.
+
+This completes the direct database permission milestone and G6/G15 under the
+basic lecture policies. Per-user ownership restrictions under VG1 remain open.
+No credentials or tokens are recorded here.
 
 ## Submission and oral review
 
-- [ ] Repository link covering backend and frontend.
+- [x] Repository link covering backend and frontend: https://github.com/lilyweathers/stayfinder-stays
 - [ ] Accurate list of fulfilled criteria with evidence above.
 - [ ] API request file showing successful and rejected calls, including every VG rule.
 - [ ] Database permission/constraint verification, beyond mocked API tests.

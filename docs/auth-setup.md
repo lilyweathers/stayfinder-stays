@@ -86,8 +86,12 @@ sent to real recipient inboxes. Supabase Pro does not remove the built-in email
 service's low sending limit; custom SMTP is configured separately.
 
 Registration and login were verified through user-provided Postman responses on
-2026-10-06. Email confirmation was verified in the dashboard. Live logout and
-protected CRUD still need explicit recorded results. In Postman, use No Auth:
+2026-10-06. Email confirmation was verified in the dashboard. The user also
+confirmed the live Postman sequence: me returns 200 after login, logout returns
+200, and me returns 401 afterwards. See docs/criteria.md for the user-reported
+evidence; raw Postman exports were not supplied. The user subsequently confirmed
+live protected CRUD, anonymous API denial, and all 43 direct Supabase RLS
+assertions. In Postman, use No Auth:
 login sets cookies, and Postman sends those cookies on subsequent requests to
 localhost. No Bearer token is returned in the login JSON. Log in again after
 logout. Browser frontend calls must still use credentials: "include".

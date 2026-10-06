@@ -1,0 +1,878 @@
+{
+  "info": {
+    "name": "StayFinder - direct Supabase RLS verification",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Development only. Use local environment variables supabase_publishable_key, email, password. Never use service_role or secret keys. Run in order and stop on any failed assertion. Creates and deletes temporary records; anonymous requests omit Authorization. No Hono requests. Do not export credentials or tokens."
+  },
+  "variable": [
+    {
+      "key": "supabase_url",
+      "value": "https://rnvxntbudhvegrhaqijk.supabase.co"
+    },
+    {
+      "key": "rls_property_id",
+      "value": ""
+    },
+    {
+      "key": "rls_booking_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Direct login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/auth/v1/token?grant_type=password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "if(pm.response.code===200){const token=pm.response.json().access_token;pm.test('Access token received',()=>pm.expect(token).to.be.a('string').and.not.empty);if(token)pm.environment.set('rls_access_token',token);else pm.execution.setNextRequest(null);}",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Authenticated create property",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{rls_access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/properties",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Temporary direct RLS test\",\n  \"description\": \"Disposable database policy test\",\n  \"location\": \"Stockholm\",\n  \"price_per_night\": 1200,\n  \"max_guests\": 2\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201',()=>pm.response.to.have.status(201));",
+              "if(pm.response.code===201){ const rows=pm.response.json(); pm.test('One inserted row',()=>pm.expect(rows).to.have.lengthOf(1)); if(rows.length===1)pm.collectionVariables.set('rls_property_id',rows[0].property_id); else pm.execution.setNextRequest(null); }",
+              "if (pm.response.code !== 201) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Authenticated create booking",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{rls_access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/bookings",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"property_id\": \"{{rls_property_id}}\",\n  \"guest_name\": \"RLS Test Guest\",\n  \"guest_email\": \"guest@example.com\",\n  \"check_in\": \"2030-06-10\",\n  \"check_out\": \"2030-06-12\",\n  \"guests\": 1,\n  \"status\": \"pending\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201',()=>pm.response.to.have.status(201));",
+              "if(pm.response.code===201){ const rows=pm.response.json(); pm.test('One inserted row',()=>pm.expect(rows).to.have.lengthOf(1)); if(rows.length===1)pm.collectionVariables.set('rls_booking_id',rows[0].booking_id); else pm.execution.setNextRequest(null); }",
+              "if (pm.response.code !== 201) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Anonymous property read",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/properties?property_id=eq.{{rls_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('Public property visible',()=>pm.expect(pm.response.json()).to.have.lengthOf(1));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Anonymous booking read",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/bookings?booking_id=eq.{{rls_booking_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('No rows visible or changed',()=>pm.expect(pm.response.json()).to.eql([]));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Anonymous property insert denied",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/properties",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Temporary direct RLS test\",\n  \"description\": \"Disposable database policy test\",\n  \"location\": \"Stockholm\",\n  \"price_per_night\": 1200,\n  \"max_guests\": 2\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401',()=>pm.response.to.have.status(401));",
+              "pm.test('Database permission error',()=>pm.expect(pm.response.json().code).to.eql('42501')); ",
+              "if (pm.response.code !== 401) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Anonymous booking insert denied",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/bookings",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"property_id\": \"{{rls_property_id}}\",\n  \"guest_name\": \"RLS Test Guest\",\n  \"guest_email\": \"guest@example.com\",\n  \"check_in\": \"2030-06-10\",\n  \"check_out\": \"2030-06-12\",\n  \"guests\": 1,\n  \"status\": \"pending\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401',()=>pm.response.to.have.status(401));",
+              "pm.test('Database permission error',()=>pm.expect(pm.response.json().code).to.eql('42501')); ",
+              "if (pm.response.code !== 401) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Anonymous property update touches no rows",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/properties?property_id=eq.{{rls_property_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"This must not persist\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('No rows visible or changed',()=>pm.expect(pm.response.json()).to.eql([]));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Anonymous booking update touches no rows",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/bookings?booking_id=eq.{{rls_booking_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"guest_name\": \"This must not persist\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('No rows visible or changed',()=>pm.expect(pm.response.json()).to.eql([]));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Anonymous booking delete touches no rows",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/bookings?booking_id=eq.{{rls_booking_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('No rows visible or changed',()=>pm.expect(pm.response.json()).to.eql([]));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Anonymous property delete touches no rows",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/properties?property_id=eq.{{rls_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('No rows visible or changed',()=>pm.expect(pm.response.json()).to.eql([]));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Authenticated property unchanged",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{rls_access_token}}"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/properties?property_id=eq.{{rls_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('Property remains unchanged',()=>{const r=pm.response.json();pm.expect(r).to.have.lengthOf(1);pm.expect(r[0].title).to.eql('Temporary direct RLS test');});",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Authenticated booking unchanged",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{rls_access_token}}"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/bookings?booking_id=eq.{{rls_booking_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('Booking remains unchanged',()=>{const r=pm.response.json();pm.expect(r).to.have.lengthOf(1);pm.expect(r[0].guest_name).to.eql('RLS Test Guest');});",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Authenticated property update",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{rls_access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/properties?property_id=eq.{{rls_property_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Updated direct RLS test\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('One updated property',()=>pm.expect(pm.response.json()).to.have.lengthOf(1));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 Authenticated property update persisted",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{rls_access_token}}"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/properties?property_id=eq.{{rls_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('Updated title persisted',()=>pm.expect(pm.response.json()[0].title).to.eql('Updated direct RLS test'));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 Authenticated booking update",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{rls_access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/bookings?booking_id=eq.{{rls_booking_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"guest_name\": \"Updated RLS Guest\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('One updated booking',()=>pm.expect(pm.response.json()).to.have.lengthOf(1));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 Authenticated booking update persisted",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{rls_access_token}}"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/bookings?booking_id=eq.{{rls_booking_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('Updated guest persisted',()=>pm.expect(pm.response.json()[0].guest_name).to.eql('Updated RLS Guest'));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 Authenticated delete temporary booking",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{rls_access_token}}"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/bookings?booking_id=eq.{{rls_booking_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('One deleted booking',()=>pm.expect(pm.response.json()).to.have.lengthOf(1));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 Deleted booking absent",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{rls_access_token}}"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/bookings?booking_id=eq.{{rls_booking_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('No rows visible or changed',()=>pm.expect(pm.response.json()).to.eql([]));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 Authenticated delete temporary property",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{rls_access_token}}"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/properties?property_id=eq.{{rls_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('One deleted property',()=>pm.expect(pm.response.json()).to.have.lengthOf(1));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 Deleted property absent",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{rls_access_token}}"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/rest/v1/properties?property_id=eq.{{rls_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200',()=>pm.response.to.have.status(200));",
+              "pm.test('No rows visible or changed',()=>pm.expect(pm.response.json()).to.eql([]));",
+              "if (pm.response.code !== 200) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 Invalidate direct test session",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_publishable_key}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{rls_access_token}}"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{supabase_url}}/auth/v1/logout?scope=local"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 204',()=>pm.response.to.have.status(204));",
+              "if(pm.response.code===204)pm.environment.unset('rls_access_token');",
+              "if (pm.response.code !== 204) pm.execution.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,981 @@
+{
+  "info": {
+    "name": "StayFinder - live CRUD and authentication verification",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Run in order against your development project. Creates one temporary property and booking, verifies CRUD and anonymous denial, then deletes only those records. Stop on any failure; do not continue if fixture IDs were not captured. Use Postman cookies. Set email/password as local environment variables, never commit credentials. These are basic G-level checks, not VG ownership verification."
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "crud_property_id",
+      "value": ""
+    },
+    {
+      "key": "crud_booking_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Verify session",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/auth/me"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Authenticated user returned', () => pm.expect(pm.response.json().user.id).to.be.a('string'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Create temporary property",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Temporary CRUD test property\",\n  \"description\": \"Disposable record for API authentication checks\",\n  \"location\": \"Stockholm\",\n  \"price_per_night\": 1200,\n  \"max_guests\": 2\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.collectionVariables.set('crud_property_id', pm.response.json().property_id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 List properties",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Created property appears', () => pm.expect(pm.response.json().some(p => p.property_id === pm.collectionVariables.get('crud_property_id'))).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Read property",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties/{{crud_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Property title matches', () => pm.expect(pm.response.json().title).to.eql('Temporary CRUD test property'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Update property with PATCH",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties/{{crud_property_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Updated CRUD test property\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Verify persisted property update",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties/{{crud_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Updated title persisted', () => pm.expect(pm.response.json().title).to.eql('Updated CRUD test property'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Update property with PUT",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties/{{crud_property_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Updated CRUD test property\",\n  \"description\": \"Disposable record for API authentication checks\",\n  \"location\": \"Stockholm\",\n  \"price_per_night\": 1300,\n  \"max_guests\": 2\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Verify persisted PUT",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties/{{crud_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Price persisted', () => pm.expect(Number(pm.response.json().price_per_night)).to.eql(1300));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Create temporary booking",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/bookings",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"property_id\": \"{{crud_property_id}}\",\n  \"guest_name\": \"CRUD Test Guest\",\n  \"guest_email\": \"guest@example.com\",\n  \"check_in\": \"2030-06-10\",\n  \"check_out\": \"2030-06-12\",\n  \"guests\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.collectionVariables.set('crud_booking_id', pm.response.json().booking_id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 List bookings",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/bookings"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Created booking appears', () => pm.expect(pm.response.json().some(b => b.booking_id === pm.collectionVariables.get('crud_booking_id'))).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Read booking",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/bookings/{{crud_booking_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Update booking",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/bookings/{{crud_booking_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"property_id\": \"{{crud_property_id}}\",\n  \"guest_name\": \"Updated CRUD Test Guest\",\n  \"guest_email\": \"guest@example.com\",\n  \"check_in\": \"2030-06-10\",\n  \"check_out\": \"2030-06-12\",\n  \"guests\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Verify persisted booking update",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/bookings/{{crud_booking_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Updated guest persisted', () => pm.expect(pm.response.json().guest_name).to.eql('Updated CRUD Test Guest'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 Logout",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/auth/logout"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 Verify anonymous session",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/auth/me"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 Anonymous property list stays public",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 Anonymous property detail stays public",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties/{{crud_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 Deny anonymous property create",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Temporary CRUD test property\",\n  \"description\": \"Disposable record for API authentication checks\",\n  \"location\": \"Stockholm\",\n  \"price_per_night\": 1200,\n  \"max_guests\": 2\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));",
+              "pm.test('Unauthorized JSON', () => pm.expect(pm.response.json().error).to.eql('Unauthorized'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 Deny anonymous property PATCH",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties/{{crud_property_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Should be denied\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));",
+              "pm.test('Unauthorized JSON', () => pm.expect(pm.response.json().error).to.eql('Unauthorized'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 Deny anonymous property PUT",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties/{{crud_property_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Temporary CRUD test property\",\n  \"description\": \"Disposable record for API authentication checks\",\n  \"location\": \"Stockholm\",\n  \"price_per_night\": 1200,\n  \"max_guests\": 2\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));",
+              "pm.test('Unauthorized JSON', () => pm.expect(pm.response.json().error).to.eql('Unauthorized'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 Deny anonymous property delete",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties/{{crud_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));",
+              "pm.test('Unauthorized JSON', () => pm.expect(pm.response.json().error).to.eql('Unauthorized'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 Deny anonymous booking list",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/bookings"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));",
+              "pm.test('Unauthorized JSON', () => pm.expect(pm.response.json().error).to.eql('Unauthorized'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24 Deny anonymous booking detail",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/bookings/{{crud_booking_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));",
+              "pm.test('Unauthorized JSON', () => pm.expect(pm.response.json().error).to.eql('Unauthorized'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25 Deny anonymous booking create",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/bookings",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"property_id\": \"{{crud_property_id}}\",\n  \"guest_name\": \"CRUD Test Guest\",\n  \"guest_email\": \"guest@example.com\",\n  \"check_in\": \"2030-06-10\",\n  \"check_out\": \"2030-06-12\",\n  \"guests\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));",
+              "pm.test('Unauthorized JSON', () => pm.expect(pm.response.json().error).to.eql('Unauthorized'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26 Deny anonymous booking update",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/bookings/{{crud_booking_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"property_id\": \"{{crud_property_id}}\",\n  \"guest_name\": \"CRUD Test Guest\",\n  \"guest_email\": \"guest@example.com\",\n  \"check_in\": \"2030-06-10\",\n  \"check_out\": \"2030-06-12\",\n  \"guests\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));",
+              "pm.test('Unauthorized JSON', () => pm.expect(pm.response.json().error).to.eql('Unauthorized'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "27 Deny anonymous booking delete",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/bookings/{{crud_booking_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));",
+              "pm.test('Unauthorized JSON', () => pm.expect(pm.response.json().error).to.eql('Unauthorized'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "28 Login again for verification and cleanup",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "29 Verify denied mutation left property unchanged",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties/{{crud_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Original update remains', () => pm.expect(pm.response.json().title).to.eql('Updated CRUD test property'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "30 Verify denied deletion left booking unchanged",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/bookings/{{crud_booking_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Updated guest remains', () => pm.expect(pm.response.json().guest_name).to.eql('Updated CRUD Test Guest'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "31 Delete temporary booking",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/bookings/{{crud_booking_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "32 Deleted booking returns 404",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/bookings/{{crud_booking_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "33 Delete temporary property",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties/{{crud_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "34 Deleted property returns 404",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/properties/{{crud_property_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "35 Logout after cleanup",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/auth/logout"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
