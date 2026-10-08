@@ -171,7 +171,7 @@ test("booking deletion requires a participant and an active current/future booki
     if (init.method === "DELETE") {
       deletes++;
       assert.equal(url.searchParams.get("booking_id"), "eq.b1");
-      assert.equal(url.searchParams.get("status"), "in.(pending,confirmed)");
+      assert.equal(url.searchParams.get("status"), row?.status === "cancelled" ? "in.(cancelled)" : "in.(pending,confirmed)");
       assert.match(url.searchParams.get("check_in")!, /^gte\.\d{4}-\d{2}-\d{2}$/);
       assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + token);
       if (deleteError) return Response.json({ code: deleteError, message: "Denied" }, { status: 400 });
@@ -186,12 +186,17 @@ test("booking deletion requires a participant and an active current/future booki
   ownerId = "unrelated";
   assert.equal((await request("/bookings/b1", "DELETE")).status, 403);
   row = { ...row, guest_id: user.id, status: "cancelled" };
+  assert.equal((await request("/bookings/b1", "DELETE")).status, 403);
+  ownerId = user.id;
+  assert.equal((await request("/bookings/b1", "DELETE")).status, 200);
+  row = { ...row, check_in: "2000-01-01" };
   assert.equal((await request("/bookings/b1", "DELETE")).status, 409);
+  ownerId = "unrelated";
   row = { ...row, status: "pending", check_in: "2000-01-01" };
   assert.equal((await request("/bookings/b1", "DELETE")).status, 409);
   row = { ...row, check_in: "2099-02-30" };
   assert.equal((await request("/bookings/b1", "DELETE")).status, 409);
-  assert.equal(deletes, 2);
+  assert.equal(deletes, 3);
   row = { ...row, check_in: "2099-01-01" };
   conflict = true;
   assert.equal((await request("/bookings/b1", "DELETE")).status, 409);

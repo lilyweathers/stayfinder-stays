@@ -156,3 +156,14 @@ Run `tests/property_deletion.sql` and `tests/user_deletion.sql` after 011 for
 rollback-only verification. The user confirmed application of 011 and a passing
 user_deletion.sql test on 2026-10-08 (user-reported; fixtures rolled back).
 The separate property_deletion.sql result after 011 remains unconfirmed.
+
+## Host deletion of cancelled bookings
+
+Apply `012_host_cancelled_booking_deletion.sql` after 011. It allows only the
+current property owner to delete cancelled bookings whose check-in is today or
+later (Europe/Stockholm). Guests still cannot delete cancelled bookings; all
+cancelled booking edits and all past booking deletions remain blocked.
+Run `tests/host_cancelled_booking_deletion.sql` for rollback-only verification.
+The user confirmed the migration, hosted tests, and browser flow work on
+2026-10-08. Do not reapply 004 afterward, as it
+would restore the older blanket cancelled-deletion restriction.

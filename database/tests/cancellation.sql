@@ -33,7 +33,7 @@ DO $$ BEGIN
   BEGIN
     DELETE FROM public.bookings WHERE booking_id = 'c4000000-0000-4000-8000-000000000001';
     RAISE EXCEPTION 'Cancelled booking was deleted';
-  EXCEPTION WHEN check_violation THEN NULL; END;
+  EXCEPTION WHEN check_violation OR insufficient_privilege THEN NULL; END;
   BEGIN
     UPDATE public.bookings SET status = 'cancelled' WHERE booking_id = 'c4000000-0000-4000-8000-000000000003';
     RAISE EXCEPTION 'Past booking was cancelled';

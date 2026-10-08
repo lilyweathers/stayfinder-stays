@@ -13,7 +13,7 @@ export default function DeleteBookingButton({ booking, onDeleted }: {
   const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm",
     year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const checkIn = new Date(booking.check_in + "T00:00:00Z");
-  if (!["pending", "confirmed"].includes(booking.status)
+  if (!["pending", "confirmed", "cancelled"].includes(booking.status)
     || !/^\d{4}-\d{2}-\d{2}$/.test(booking.check_in) || Number.isNaN(checkIn.getTime())
     || checkIn.toISOString().slice(0, 10) !== booking.check_in || booking.check_in < today) return null;
 

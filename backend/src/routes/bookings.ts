@@ -167,22 +167,26 @@ bookingApp.delete("/:id", async (c) => {
       .select("*").eq("booking_id", id).maybeSingle();
     if (readError) throw readError;
     if (!booking) return c.json({ error: "Booking not found" }, 404);
-    if (booking.guest_id !== userId) {
+    let isOwner = false;
+    if (booking.guest_id !== userId || booking.status === "cancelled") {
       const { data: property, error: ownerError } = await supabase.from("properties")
         .select("owner_id").eq("property_id", booking.property_id).maybeSingle();
       if (ownerError) throw ownerError;
-      if (property?.owner_id !== userId) return c.json({ error: "Booking access denied" }, 403);
+      isOwner = property?.owner_id === userId;
+      if (!isOwner && booking.guest_id !== userId) return c.json({ error: "Booking access denied" }, 403);
     }
-    if (!["pending", "confirmed"].includes(booking.status)) {
-      return c.json({ error: "Cancelled bookings cannot be deleted" }, 409);
+    if (booking.status === "cancelled" && !isOwner) {
+      return c.json({ error: "Only the property owner can delete cancelled bookings" }, 403);
     }
+    const deletableStatuses = isOwner ? ["pending", "confirmed", "cancelled"] : ["pending", "confirmed"];
+    if (!deletableStatuses.includes(booking.status)) return c.json({ error: "This booking cannot be deleted" }, 409);
     const checkIn = new Date(booking.check_in + "T00:00:00Z");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(booking.check_in) || Number.isNaN(checkIn.getTime())
       || checkIn.toISOString().slice(0, 10) !== booking.check_in || booking.check_in < today) {
       return c.json({ error: "Bookings with past or invalid check-in dates cannot be deleted" }, 409);
     }
     const { data, error } = await supabase.from("bookings").delete()
-      .eq("booking_id", id).in("status", ["pending", "confirmed"])
+      .eq("booking_id", id).in("status", booking.status === "cancelled" ? ["cancelled"] : ["pending", "confirmed"])
       .gte("check_in", today).select("*").maybeSingle();
     if (error?.code === "42501") return c.json({ error: "Booking access denied" }, 403);
     if (error?.code === "23514") return c.json({ error: "This booking can no longer be deleted" }, 409);

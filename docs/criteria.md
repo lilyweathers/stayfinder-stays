@@ -688,3 +688,22 @@ and previously recorded real-account/browser evidence, this completes G14.
 The initial note requiring complete live status verification is superseded
 by this explicitly scoped HTTP evidence; no claim is made that every status
 was induced against the hosted project.
+
+### Host deletion of cancelled bookings - 2026-10-08
+
+At the user request, management now shows Delete booking for cancelled bookings
+with valid current/future check-in. API deletion verifies current property
+ownership even when the user is also the guest. Nonowner guest deletion is 403;
+past deletion remains 409. Migration 012 updates the database trigger to permit
+the same host-only exception while keeping cancelled rows immutable for edits.
+Earlier blanket cancelled-deletion evidence describes the previous behavior.
+All 30 backend tests and frontend type/lint checks passed. The user subsequently confirmed the instructed migration, rollback database
+checks, and browser deletion sequence works on 2026-10-08. This is user-reported
+evidence; raw SQL results and browser response exports were not supplied.
+
+- [x] Apply database/012_host_cancelled_booking_deletion.sql.
+  (user-confirmed passing instructed sequence on 2026-10-08).
+- [x] Run database/tests/host_cancelled_booking_deletion.sql.
+  (user-confirmed passing instructed sequence on 2026-10-08).
+- [x] Verify host deletion of a current/future cancelled booking in the browser.
+  (user-confirmed passing instructed sequence on 2026-10-08).
