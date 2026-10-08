@@ -49,7 +49,7 @@ export default function BookingEditForm({ booking, maxGuests, onSaved }: {
       <label>Check-out<input name="check_out" type="date" min={today} required defaultValue={booking.check_out} /></label>
       <label>Guests<input name="guests" type="number" min={1} max={maxGuests} step={1} required defaultValue={booking.guests} /></label>
       <button disabled={pending}>{pending ? "Saving…" : "Save booking"}</button>
-      <button type="button" disabled={pending} onClick={() => { setEditing(false); setError(""); }}>Discard changes</button>
+      <button className="button-danger" type="button" disabled={pending} onClick={() => { setEditing(false); setError(""); }}>Discard changes</button>
     </form> : <button type="button" onClick={() => { setEditing(true); setNotice(""); }}>Edit booking</button>}
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}

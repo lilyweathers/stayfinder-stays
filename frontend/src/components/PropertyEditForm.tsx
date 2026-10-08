@@ -43,8 +43,18 @@ export default function PropertyEditForm({ property, onSaved }: {
       <label>Price per night<input name="price_per_night" type="number" min={100} step="0.01" required defaultValue={property.price_per_night} /></label>
       <label>Maximum guests<input name="max_guests" type="number" min={1} step={1} required defaultValue={property.max_guests} /></label>
       <button disabled={pending}>{pending ? "Saving…" : "Save property"}</button>
-      <button type="button" disabled={pending} onClick={() => { setEditing(false); setError(""); }}>Discard changes</button>
-    </form> : <button type="button" onClick={() => { setEditing(true); setNotice(""); }}>Edit property</button>}
+      <button className="button-danger" type="button" disabled={pending} onClick={() => { setEditing(false); setError(""); }}>Discard changes</button>
+    </form> : <>
+      <dl className="property-information">
+        <dt>Title</dt><dd>{property.title}</dd>
+        <dt>Description</dt><dd>{property.description}</dd>
+        <dt>Location</dt><dd>{property.location}</dd>
+        <dt>Price per night</dt><dd>{property.price_per_night}</dd>
+        <dt>Maximum guests</dt><dd>{property.max_guests}</dd>
+        <dt>Image URL</dt><dd>{property.image_url || "No image added"}</dd>
+      </dl>
+      <button type="button" onClick={() => { setEditing(true); setNotice(""); }}>Edit property</button>
+    </>}
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
   </section>;

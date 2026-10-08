@@ -24,9 +24,9 @@ export default function DeletePropertyButton({ property }: { property: Property 
   return <section className="booking-actions">
     {confirming ? <>
       <p>Delete “{property.title}”? All upcoming pending and confirmed bookings, including check-ins today, will be cancelled. Booking history will be preserved.</p>
-      <button type="button" disabled={pending} onClick={remove}>{pending ? "Deleting…" : "Confirm deletion"}</button>
+      <button className="button-danger" type="button" disabled={pending} onClick={remove}>{pending ? "Deleting…" : "Confirm deletion"}</button>
       <button type="button" disabled={pending} onClick={() => { setConfirming(false); setError(""); }}>Keep property</button>
-    </> : <button type="button" onClick={() => setConfirming(true)}>Delete property</button>}
+    </> : <button className="button-danger" type="button" onClick={() => setConfirming(true)}>Delete property</button>}
     {error && <p role="alert">{error}</p>}
   </section>;
 }

@@ -37,9 +37,9 @@ export default function CancelBookingButton({ booking, onCancelled }: {
   return <div className="booking-actions">
     {confirming ? <>
       <p>Cancel this booking? Your reservation will be marked as cancelled.</p>
-      <button type="button" onClick={cancel} disabled={pending}>{pending ? "Cancelling…" : "Confirm cancellation"}</button>
+      <button className="button-danger" type="button" onClick={cancel} disabled={pending}>{pending ? "Cancelling…" : "Confirm cancellation"}</button>
       <button type="button" onClick={() => { setConfirming(false); setError(""); }} disabled={pending}>Keep booking</button>
-    </> : <button type="button" onClick={() => setConfirming(true)}>Cancel booking</button>}
+    </> : <button className="button-danger" type="button" onClick={() => setConfirming(true)}>Cancel booking</button>}
     {error && <p role="alert">{error}</p>}
   </div>;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import PropertyImage from "@/components/PropertyImage";
 import { useEffect, useState } from "react";
 import { ApiError, getCurrentUser, getProperties } from "@/lib/api";
 import type { Property } from "@/types/property";
@@ -52,7 +53,8 @@ export default function MyPropertiesPage() {
       setNotice(`Property "${property.title}" created successfully.`);
     }} /> : <p><button type="button" onClick={() => { setCreating(true); setNotice(""); }}>Create new property</button></p>)}
     {!loading && !error && properties.length === 0 && <p>You do not own any properties yet.</p>}
-    {!loading && !error && properties.map(property => <article className="card" key={property.property_id}>
+    {!loading && !error && properties.map(property => <article className="card account-property-card" key={property.property_id}>
+      <Link href={`/my-properties/${encodeURIComponent(property.property_id)}`}><PropertyImage src={property.image_url} title={property.title} /></Link>
       <h2>{property.title}</h2>
       <p>{property.location}</p>
       <p>{property.price_per_night} per night · Up to {property.max_guests} guests</p>

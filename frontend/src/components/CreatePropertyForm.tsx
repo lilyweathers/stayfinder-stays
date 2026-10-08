@@ -41,7 +41,7 @@ export default function CreatePropertyForm({ onCreated, onClose }: {
       <label>Price per night<input name="price_per_night" type="number" min={100} step="0.01" required /></label>
       <label>Maximum guests<input name="max_guests" type="number" min={1} step={1} required /></label>
       <button disabled={pending}>{pending ? "Creating…" : "Create property"}</button>
-      <button type="button" disabled={pending} onClick={onClose}>Cancel</button>
+      <button className="button-danger" type="button" disabled={pending} onClick={onClose}>Cancel</button>
     </form>
     {error && <p role="alert">{error}</p>}
     {needsLogin && <Link href="/login">Sign in again</Link>}

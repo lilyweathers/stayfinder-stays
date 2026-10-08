@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ApiError, getPropertyBookings, getCurrentUser, getProperty } from "@/lib/api";
 import type { Property } from "@/types/property";
 import type { Booking } from "@/types/booking";
+import PropertyImage from "@/components/PropertyImage";
 import PropertyEditForm from "@/components/PropertyEditForm";
 import BookingEditForm from "@/components/BookingEditForm";
 import CancelBookingButton from "@/components/CancelBookingButton";
@@ -59,6 +60,7 @@ export default function PropertyOwnerPanel({ propertyId }: { propertyId: string 
     {isOwner && property && <>
       <h2>{property.title}</h2>
       <p>{property.location}</p>
+      <PropertyImage src={property.image_url} title={property.title} detail />
       <PropertyEditForm property={property} onSaved={updated => { setProperty(updated); router.refresh(); }} />
       <DeletePropertyButton property={property} />
       <h3>Bookings for this property</h3>

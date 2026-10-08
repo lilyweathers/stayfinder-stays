@@ -76,3 +76,21 @@ textarea { font: inherit; padding: 12px; border: 1px solid #888; border-radius: 
   .home-section-heading { align-items: flex-start; flex-direction: column; gap: 16px; }
   .home-featured { margin-top: 40px; }
 }
+
+.account-property-card .property-image { max-height: 300px; }
+
+.property-card-description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+
+.property-information { display: grid; grid-template-columns: 160px minmax(0, 1fr); margin: 0 0 24px; }
+.property-information dt, .property-information dd { margin: 0; padding: 14px 0; border-bottom: 1px solid #ddd; line-height: 1.6; }
+.property-information dt { font-weight: bold; padding-right: 20px; }
+.property-information dd { overflow-wrap: anywhere; white-space: pre-wrap; }
+@media (max-width: 600px) {
+  .property-information { grid-template-columns: 1fr; }
+  .property-information dt { border-bottom: 0; padding-bottom: 0; }
+  .property-information dd { padding-top: 4px; }
+}
+
+button.button-danger { background: #b91c1c; border-color: #b91c1c; color: white; }
+button.button-danger:hover:not(:disabled) { background: #991b1b; border-color: #991b1b; }
+button.button-danger:focus-visible { outline: 3px solid #b91c1c; outline-offset: 3px; }

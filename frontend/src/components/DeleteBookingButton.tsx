@@ -31,9 +31,9 @@ export default function DeleteBookingButton({ booking, onDeleted }: {
   return <div className="booking-actions">
     {confirming ? <>
       <p>Permanently delete the booking for {booking.guest_name}, {booking.check_in} to {booking.check_out}? This cannot be undone.</p>
-      <button type="button" disabled={pending} onClick={remove}>{pending ? "Deleting…" : "Confirm deletion"}</button>
+      <button className="button-danger" type="button" disabled={pending} onClick={remove}>{pending ? "Deleting…" : "Confirm deletion"}</button>
       <button type="button" disabled={pending} onClick={() => { setConfirming(false); setError(""); }}>Keep booking</button>
-    </> : <button type="button" onClick={() => setConfirming(true)}>Delete booking</button>}
+    </> : <button className="button-danger" type="button" onClick={() => setConfirming(true)}>Delete booking</button>}
     {error && <p role="alert">{error}</p>}
   </div>;
 }

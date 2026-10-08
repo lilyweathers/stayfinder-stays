@@ -68,9 +68,9 @@ export default function ProfilePage() {
           <label htmlFor="deletion-password">Confirm with your current password</label>
           <input id="deletion-password" name="password" type="password" autoComplete="current-password"
             required maxLength={1024} value={password} onChange={event => setPassword(event.target.value)} disabled={pending} />
-          <button type="submit" disabled={pending || !password}>{pending ? "Deleting account…" : "Confirm delete account"}</button>
-          <button type="button" disabled={pending} onClick={() => { setConfirming(false); setPassword(""); setError(""); }}>Cancel</button>
-        </form> : <button type="button" onClick={() => setConfirming(true)}>Delete account</button>}
+          <button className="button-danger" type="submit" disabled={pending || !password}>{pending ? "Deleting account…" : "Confirm delete account"}</button>
+          <button className="button-danger" type="button" disabled={pending} onClick={() => { setConfirming(false); setPassword(""); setError(""); }}>Cancel</button>
+        </form> : <button className="button-danger" type="button" onClick={() => setConfirming(true)}>Delete account</button>}
       </section>
     </> : <p>Please <Link href="/login">sign in</Link> to view your profile.</p>}
     {error && <p role="alert">{error}</p>}

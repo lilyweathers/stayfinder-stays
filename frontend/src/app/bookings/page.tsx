@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
+import PropertyImage from "@/components/PropertyImage";
 import { useEffect, useState } from "react";
 import { ApiError, getBookings, getProperties } from "@/lib/api";
 import type { Booking } from "@/types/booking";
@@ -95,7 +96,8 @@ export default function BookingsPage() {
           {visibleBookings.map(booking => {
             const property = propertyById.get(booking.property_id);
             return (
-              <article className="card" key={booking.booking_id}>
+              <article className="card account-property-card" key={booking.booking_id}>
+                {property && <Link href={`/properties/${encodeURIComponent(property.property_id)}`}><PropertyImage src={property.image_url} title={property.title} /></Link>}
                 <h2>{property?.title || booking.deleted_property_title || (propertiesLoaded ? "Deleted property" : `Property ${booking.property_id}`)}</h2>
                 {property && <p>{property.location}</p>}
                 <dl className="booking-details">
