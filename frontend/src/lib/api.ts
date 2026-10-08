@@ -1,6 +1,6 @@
 import type { ApiErrorResponse, AuthResponse, RegisterResponse } from "@/types/api";
 import type { Booking, NewBooking } from "@/types/booking";
-import type { Property, PropertyInput } from "@/types/property";
+import type { Property, PropertyInput, PropertyFilters } from "@/types/property";
 
 const apiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000").replace(/\/$/, "");
 
@@ -25,7 +25,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export const getProperties = () => request<Property[]>("/properties");
+export const getProperties = (filters: PropertyFilters = {}) => {
+  const query = new URLSearchParams();
+  for (const [name, value] of Object.entries(filters)) {
+    if (value?.trim()) query.set(name, value.trim());
+  }
+  const suffix = query.size ? `?${query.toString()}` : "";
+  return request<Property[]>(`/properties${suffix}`);
+};
 export const createProperty = (property: PropertyInput) => request<Property>("/properties", {
   method: "POST", body: JSON.stringify(property),
 });

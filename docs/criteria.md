@@ -180,8 +180,8 @@ does not prove that PostgreSQL permissions or constraints work.
 | [x] | G1 | Visitors can register, log in, and log out. | Browser registration, confirmation/login sequence, session display, and logout verified by user reports on 2026-10-08. After logout, Bookings prompts sign-in. |
 | [x] | G2 | Login survives reload; the app can identify the logged-in user. | Cookie sessions and current-user navigation implemented. Automated backend auth tests pass; user confirmed email and Logout remain after Ctrl+R and Bookings loads without a sign-in prompt on 2026-10-08. |
 | [x] | G3 | Navigation changes for authenticated and anonymous visitors. | User confirmed signed-in email and Logout, followed by email removal and Login/Register returning after logout on 2026-10-08. Signed-out Bookings displays a sign-in prompt. |
-| [ ] | G4 | Everyone can view the property list and individual details. | Public API and frontend list/detail routes implemented. Live list matches Supabase and is shown in user screenshots; live detail-page verification remains. |
-| [ ] | G5 | Filter by location, maximum price, and guest count. | Not implemented: property list does not apply location, price, or guest filters. |
+| [x] | G4 | Everyone can view the property list and individual details. | Public list/detail API reads verified earlier; browser list matches Supabase and is shown in user screenshots. On 2026-10-08, the user supplied the logged-out Gothenburg Harbor Loft detail view with title, location, description, nightly price, and guest capacity. |
+| [x] | G5 | Filter by location, maximum price, and guest count. | Implemented GET /properties location/max_price/guests filters with query validation and database filtering; frontend GET form retains URL values and supports clearing/empty results. All 24 backend tests and frontend type/lint checks pass. Live individual/combined API filters and server-rendered controls verified on 2026-10-08; user confirmed browser Apply filters and Clear filters work on 2026-10-08. |
 | [x] | G6 | Property writes require authentication in both API and database. | API guards and hosted basic RLS policies implemented. Live authenticated CRUD, anonymous API denial, and direct Supabase write restrictions confirmed by the user. Ownership is tracked under VG1. |
 | [x] | G7 | An authenticated user can create a property using a frontend form. | Create new property form added to My Properties with validation, pending/error/success feedback, and POST /properties. Backend assigns the signed-in user's owner_id. User confirmed creating a temporary account and property during the live account-deletion check on 2026-10-08. |
 | [ ] | G8 | Sort by ascending or descending price in the backend. | Not implemented: property list has no backend price sorting. |
@@ -507,3 +507,31 @@ Drafts use per-property sessionStorage in the current tab and clear on successfu
 creation. Login return destinations are restricted to same-origin property paths.
 Frontend TypeScript and ESLint checks passed. This confirmation supersedes the
 earlier note that browser confirmation of the sign-in message fix was pending.
+
+### Property filters implementation and live checks (G5) - 2026-10-08
+
+Code: backend/src/validators/propertyFilterValidator.ts, backend/src/routes/properties.ts,
+backend/tests/property-filters.test.ts, frontend/src/app/properties/page.tsx,
+frontend/src/lib/api.ts, frontend/src/types/property.ts, and PropertyList.tsx.
+Location uses a case-insensitive substring match; max_price uses inclusive nightly
+price <= maximum, and guests uses capacity >= requested guests. Filters combine
+with AND and always exclude deleted properties. Blank filters are ignored.
+Invalid non-numeric/negative prices and non-positive/fractional guest counts
+return 400 with validation details. No database migration is required.
+
+Independent live read-only API checks compared returned IDs against the six
+existing properties: Gothenburg returned one, max_price=1200 returned five,
+guests=4 returned four, and their combination returned Gothenburg Harbor Loft.
+A nonexistent location and max_price=0 returned no rows; blank filters returned
+all six. max_price=-1 and guests=1.5 returned 400. The filtered frontend URL
+returned 200 with all three form fields and the matching Harbor Loft rendered.
+All 24 backend tests passed; frontend route generation, TypeScript, and ESLint
+passed. The user subsequently confirmed browser Apply filters and Clear filters work;
+G5 is complete on the combined automated, live API, and user-reported browser evidence.
+
+### G5 browser filter verification - 2026-10-08
+
+The user confirmed the instructed browser checks worked: applying location
+Gothenburg, maximum nightly price 1200, and four guests shows Gothenburg Harbor
+Loft; Clear filters restores all six properties. This is user-reported evidence
+and completes G5 alongside the previously recorded live API and automated checks.

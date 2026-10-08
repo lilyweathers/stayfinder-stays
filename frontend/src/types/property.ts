@@ -9,3 +9,9 @@ export interface Property {
 }
 
 export type PropertyInput = Omit<Property, "property_id" | "owner_id">;
+
+export interface PropertyFilters {
+  location?: string;
+  max_price?: string;
+  guests?: string;
+}

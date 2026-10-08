@@ -1,0 +1,23 @@
+# Public property filters (G5)
+@base_url = http://localhost:3000
+
+### Location substring, case insensitive
+GET {{base_url}}/properties?location=gothenburg
+
+### Inclusive maximum nightly price
+GET {{base_url}}/properties?max_price=1200
+
+### Capacity for at least four guests
+GET {{base_url}}/properties?guests=4
+
+### All filters together
+GET {{base_url}}/properties?location=gothenburg&max_price=1200&guests=4
+
+### No matches: 200 with []
+GET {{base_url}}/properties?location=zzzz-no-such-location
+
+### Invalid price: 400
+GET {{base_url}}/properties?max_price=-1
+
+### Invalid guest count: 400
+GET {{base_url}}/properties?guests=1.5

@@ -3,14 +3,24 @@ import {
   partialPropertyValidator,
   propertyValidator,
 } from "../validators/propertyValidator.js";
+import { propertyFilterValidator } from "../validators/propertyFilterValidator.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const propertiesApp = new Hono({ strict: false });
 
-propertiesApp.get("/", async (c) => {
+propertiesApp.get("/", propertyFilterValidator, async (c) => {
   const supabase = c.get("supabase");
   try {
-    const { data, error } = await supabase.from("properties").select("*").is("deleted_at", null);
+    const { location, max_price, guests } = c.req.valid("query");
+    let query = supabase.from("properties").select("*").is("deleted_at", null);
+    if (location) {
+      // Treat SQL wildcard characters in the search text literally.
+      const escaped = location.replace(/[\\%_]/g, character => `\\${character}`);
+      query = query.ilike("location", `%${escaped}%`);
+    }
+    if (max_price !== undefined) query = query.lte("price_per_night", max_price);
+    if (guests !== undefined) query = query.gte("max_guests", guests);
+    const { data, error } = await query;
     if (error) throw error;
     return c.json(data);
   } catch (error) {
