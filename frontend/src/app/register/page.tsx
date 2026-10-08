@@ -27,7 +27,7 @@ export default function RegisterPage() {
     try {
       const file = data.get("photo");
       const photo = file instanceof File && file.size ? await readPhoto(file) : undefined;
-      const result = await register(String(data.get("email")).trim(), password, String(data.get("name")).trim(), photo);
+      const result = await register(String(data.get("email")).trim(), password, String(data.get("name")).trim(), photo, String(data.get("bio") ?? "").trim());
       if (result.confirmationRequired) {
         setConfirmationRequired(true);
         form.reset();
@@ -50,6 +50,7 @@ export default function RegisterPage() {
       ) : (
         <form onSubmit={submit}>
           <label>Name<input name="name" required maxLength={100} autoComplete="name" /></label>
+          <label>About you (optional)<textarea name="bio" maxLength={1000} placeholder="Tell others a little about yourself." /></label>
           <ProfilePhotoField disabled={pending} />
           <label>Email<input name="email" type="email" required autoComplete="email" /></label>
           <label>Password<input name="password" type="password" minLength={6} required autoComplete="new-password" aria-describedby="password-help" /></label>

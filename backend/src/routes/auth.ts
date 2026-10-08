@@ -13,13 +13,14 @@ import { env } from "../env.js";
 export const authApp = new Hono({ strict: false });
 const photoBodyLimit = bodyLimit({ maxSize: 8 * 1024 * 1024, onError: c => c.json({ error: "Photo must be no larger than 5 MB" }, 413) });
 
+const bioSchema = z.string().trim().max(1000, "Description must be at most 1000 characters");
 const displayNameSchema = z.string().trim().min(1, "Enter your name").max(100, "Name must be at most 100 characters");
-const registerValidator = zValidator("json", credentialsSchema.extend({ name: displayNameSchema.optional(), photo: photoSchema.optional() }).strict(), (result, c) => {
+const registerValidator = zValidator("json", credentialsSchema.extend({ name: displayNameSchema.optional(), bio: bioSchema.optional(), photo: photoSchema.optional() }).strict(), (result, c) => {
   if (!result.success) return c.json({ errors: result.error.issues }, 400);
 });
 
 authApp.post("/register", photoBodyLimit, registerValidator, async (c) => {
-  const { email, password, name, photo } = c.req.valid("json");
+  const { email, password, name, bio, photo } = c.req.valid("json");
   // Confirmation-required signups have no user session yet. Only this upload
   // uses the backend admin client, with an unpredictable server-generated path.
   let uploaded: { path: string; url: string } | undefined;
@@ -30,7 +31,7 @@ authApp.post("/register", photoBodyLimit, registerValidator, async (c) => {
     uploadClient = createClient<Database>(env.supabaseUrl, env.supabaseAdminKey, { auth: { persistSession: false, autoRefreshToken: false } });
     uploaded = await storePhoto(uploadClient, `registration/${randomUUID()}`, photo, bytes);
   }
-  const metadata = { ...(name ? { display_name: name } : {}), ...(uploaded ? { avatar_url: uploaded.url } : {}) };
+  const metadata = { ...(name ? { display_name: name } : {}), ...(bio !== undefined ? { bio } : {}), ...(uploaded ? { avatar_url: uploaded.url } : {}) };
   const { data, error } = await c.get("supabase").auth.signUp({ email, password, ...(Object.keys(metadata).length ? { options: { data: metadata } } : {}) });
   // Supabase can mask an existing confirmed account with an empty identities list.
   if (uploaded && uploadClient && (error || !data.user || data.user.identities?.length === 0)) {
@@ -49,21 +50,21 @@ authApp.post("/login", authValidator, async (c) => {
 authApp.get("/me", requireAuth, (c) => c.json({ user: c.get("user") }));
 
 authApp.patch("/profile", requireAuth, photoBodyLimit,
-  zValidator("json", z.object({ name: displayNameSchema, photo: photoSchema.optional(), remove_photo: z.boolean().optional() }).strict()
+  zValidator("json", z.object({ name: displayNameSchema, bio: bioSchema.optional(), photo: photoSchema.optional(), remove_photo: z.boolean().optional() }).strict()
     .refine(value => !(value.photo && value.remove_photo), "Choose a new photo or remove the current photo"), (result, c) => {
     if (!result.success) return c.json({ errors: result.error.issues }, 400);
   }), async (c) => {
     const body = c.req.valid("json");
     const client = c.get("supabase");
     const uploaded = body.photo ? await storePhoto(client, c.get("user")!.id, body.photo, decodePhoto(body.photo)) : undefined;
-    const metadata = { display_name: body.name, ...(uploaded ? { avatar_url: uploaded.url } : body.remove_photo ? { avatar_url: null } : {}) };
+    const metadata = { display_name: body.name, ...(body.bio !== undefined ? { bio: body.bio } : {}), ...(uploaded ? { avatar_url: uploaded.url } : body.remove_photo ? { avatar_url: null } : {}) };
     const { data, error } = await client.auth.updateUser({ data: metadata });
     if (error || !data.user) {
       if (uploaded) await client.storage.from(avatarBucket).remove([uploaded.path]);
       return c.json({ error: "Could not update your profile. Please try again." }, 400);
     }
     // Never delete an arbitrary URL supplied through editable account metadata.
-    const oldUrl = c.get("user")!.user_metadata.avatar_url;
+    const oldUrl = c.get("user")!.user_metadata?.avatar_url;
     const prefix = client.storage.from(avatarBucket).getPublicUrl(c.get("user")!.id + "/").data.publicUrl;
     if ((uploaded || body.remove_photo) && typeof oldUrl === "string" && oldUrl.startsWith(prefix)) {
       const filename = oldUrl.slice(prefix.length);

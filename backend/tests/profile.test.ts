@@ -60,3 +60,24 @@ test("registration saves a name as user metadata", async (t) => {
   assert.equal(response.status, 201);
   assert.equal((await response.json()).user.user_metadata.display_name, "New Guest");
 });
+
+test("profile bios are trimmed, can be cleared, and reject excessive lengths", async (t) => {
+  let writes = 0;
+  let expected = "Weekend explorer";
+  t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
+    assert.equal(new URL(String(input)).pathname, "/auth/v1/user");
+    if (init.method === "PUT") {
+      const body = JSON.parse(String(init.body));
+      assert.equal(body.data.bio, expected); writes++;
+      return Response.json({ ...user, user_metadata: body.data });
+    }
+    return Response.json(user);
+  });
+  const response = await request("/auth/profile", "PATCH", { name: "Guest", bio: "  Weekend explorer  " });
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).user.user_metadata.bio, expected);
+  expected = "";
+  assert.equal((await request("/auth/profile", "PATCH", { name: "Guest", bio: "" })).status, 200);
+  assert.equal((await request("/auth/profile", "PATCH", { name: "Guest", bio: "x".repeat(1001) })).status, 400);
+  assert.equal(writes, 2);
+});

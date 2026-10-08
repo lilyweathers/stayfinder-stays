@@ -6,6 +6,7 @@ import { env } from "./env.js";
 import { optionalAuth } from "./middleware/auth.js";
 import { authApp } from "./routes/auth.js";
 import bookingApp from "./routes/bookings.js";
+import profilesApp from "./routes/profiles.js";
 import propertiesApp from "./routes/properties.js";
 
 const app = new Hono({ strict: false });
@@ -27,6 +28,7 @@ app.use("*", async (c, next) => {
 app.use("*", optionalAuth);
 
 app.get("/", (c) => c.text("StayFinder API"));
+app.route("/profiles", profilesApp);
 app.route("/properties", propertiesApp);
 app.route("/auth", authApp);
 app.route("/bookings", bookingApp);

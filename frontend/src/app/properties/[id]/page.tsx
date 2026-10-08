@@ -22,7 +22,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
       <PropertyImage src={property.image_url} title={property.title} detail />
       <p>{property.description}</p>
       <p>{property.price_per_night} per night · Up to {property.max_guests} guests</p>
-      <Suspense fallback={<p role="status">Loading host information…</p>}><PropertyHost propertyId={property.property_id} /></Suspense>
+      <Suspense fallback={<p role="status">Loading host information…</p>}><PropertyHost propertyId={property.property_id} ownerId={property.owner_id} /></Suspense>
       <BookingForm property={property} />
     </main>
   );

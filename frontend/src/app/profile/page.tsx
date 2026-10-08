@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError, deleteAccount, getCurrentUser, updateProfile } from "@/lib/api";
-import { profileName } from "@/lib/profile";
+import { profileName, profileBio } from "@/lib/profile";
 import type { AuthResponse } from "@/types/api";
 
 function displayDate(value?: string) {
@@ -47,7 +47,7 @@ export default function ProfilePage() {
       const file = formData.get("photo");
       const remove = formData.get("remove_photo") === "on";
       const photo = !remove && file instanceof File && file.size ? await readPhoto(file) : undefined;
-      const result = await updateProfile(name, photo, remove);
+      const result = await updateProfile(name, photo, remove, String(formData.get("bio") ?? "").trim());
       setUser(result.user); setEditing(false); setNotice("Profile updated.");
       window.dispatchEvent(new Event("stayfinder:profile-updated"));
     } catch (cause) {
@@ -86,12 +86,14 @@ export default function ProfilePage() {
         {notice && <p role="status">{notice}</p>}
         {editing ? <form onSubmit={saveProfile}>
           <label>Name<input name="name" required maxLength={100} autoComplete="name" defaultValue={profileName(user)} disabled={saving} /></label>
+          <label>About you (optional)<textarea name="bio" maxLength={1000} defaultValue={profileBio(user)} disabled={saving} placeholder="Tell others a little about yourself." /></label>
           <ProfilePhotoField currentUrl={user.user_metadata?.avatar_url} disabled={saving} />
           <button disabled={saving}>{saving ? "Saving…" : "Save profile"}</button>
           <button className="button-danger" type="button" disabled={saving} onClick={() => { setEditing(false); setError(""); }}>Cancel</button>
         </form> : <>
           <dl className="property-information">
             <dt>Name</dt><dd>{profileName(user) || "Add your name to personalize your profile"}</dd>
+            <dt>About you</dt><dd>{profileBio(user) || "No description added yet"}</dd>
             <dt>Email</dt><dd>{user.email || "Not available"}</dd>
             <dt>Email confirmation</dt><dd>{user.email_confirmed_at ? "Confirmed" : "Not confirmed"}</dd>
           </dl>

@@ -1,5 +1,5 @@
 import type { ProfilePhotoInput } from "@/lib/profile-photo";
-import type { ApiErrorResponse, AuthResponse, RegisterResponse } from "@/types/api";
+import type { ApiErrorResponse, AuthResponse, RegisterResponse, PublicProfile } from "@/types/api";
 import type { Booking, NewBooking } from "@/types/booking";
 import type { Property, PropertyInput, PropertyFilters, PropertyHost } from "@/types/property";
 
@@ -59,12 +59,13 @@ export const createBooking = (booking: NewBooking) => request<Booking>("/booking
 export const login = (email: string, password: string) => request<AuthResponse>("/auth/login", {
   method: "POST", body: JSON.stringify({ email, password }),
 });
+export const getPublicProfile = (id: string) => request<PublicProfile>(`/profiles/${encodeURIComponent(id)}`);
 export const getCurrentUser = () => request<AuthResponse>("/auth/me");
 export const deleteAccount = (password: string) => request<{ message: string }>("/auth/account", {
   method: "DELETE", body: JSON.stringify({ password }),
 });
-export const updateProfile = (name: string, photo?: ProfilePhotoInput, remove_photo = false) => request<AuthResponse>("/auth/profile", { method: "PATCH", body: JSON.stringify({ name, photo, remove_photo }) });
-export const register = (email: string, password: string, name?: string, photo?: ProfilePhotoInput) => request<RegisterResponse>("/auth/register", {
-  method: "POST", body: JSON.stringify({ email, password, name, photo }),
+export const updateProfile = (name: string, photo?: ProfilePhotoInput, remove_photo = false, bio?: string) => request<AuthResponse>("/auth/profile", { method: "PATCH", body: JSON.stringify({ name, photo, remove_photo, bio }) });
+export const register = (email: string, password: string, name?: string, photo?: ProfilePhotoInput, bio?: string) => request<RegisterResponse>("/auth/register", {
+  method: "POST", body: JSON.stringify({ email, password, name, photo, bio }),
 });
 export const logout = () => request<{ message: string }>("/auth/logout", { method: "POST" });
