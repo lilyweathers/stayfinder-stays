@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, createBooking, getCurrentUser } from "@/lib/api";
-import { validateBookingForm } from "@/lib/booking-validation";
+import { calculateBookingPreview, validateBookingForm } from "@/lib/booking-validation";
 import type { Property } from "@/types/property";
 
 export default function BookingForm({ property }: { property: Property }) {
@@ -16,6 +16,8 @@ export default function BookingForm({ property }: { property: Property }) {
   const [errors, setErrors] = useState<string[]>([]);
   const [needsLogin, setNeedsLogin] = useState(false);
   const [created, setCreated] = useState(false);
+  const [preview, setPreview] = useState<ReturnType<typeof calculateBookingPreview>>(null);
+  const formatPrice = (price: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(price);
   const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm",
     year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 
@@ -41,10 +43,24 @@ export default function BookingForm({ property }: { property: Property }) {
     }).catch(error => {
       if (active) setNeedsLogin(error instanceof ApiError && error.status === 401);
     }).finally(() => {
+      if (active) {
+        const form = formRef.current;
+        if (form) {
+          const data = new FormData(form);
+          setPreview(calculateBookingPreview(String(data.get("check_in") || ""), String(data.get("check_out") || ""), property.price_per_night));
+        }
+      }
       if (active && restoreFailed) setMessage("Could not restore your booking details. Please enter them again.");
     });
     return () => { active = false; };
-  }, [draftKey]);
+  }, [draftKey, property.price_per_night]);
+
+  function updatePreview() {
+    const form = formRef.current;
+    if (!form) return;
+    const data = new FormData(form);
+    setPreview(calculateBookingPreview(String(data.get("check_in") || ""), String(data.get("check_out") || ""), property.price_per_night));
+  }
 
   function signIn(form: HTMLFormElement | null) {
     if (!form) return;
@@ -90,6 +106,7 @@ export default function BookingForm({ property }: { property: Property }) {
       setMessage("Your booking was created.");
       setCreated(true);
       form.reset();
+      setPreview(null);
       try { sessionStorage.removeItem(draftKey); } catch { /* Booking already succeeded. */ }
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
@@ -107,12 +124,18 @@ export default function BookingForm({ property }: { property: Property }) {
     <section>
       <h2>Book this stay</h2>
       {needsLogin && <p>Sign in before submitting a booking.</p>}
-      <form ref={formRef} onSubmit={submit} noValidate>
+      <form ref={formRef} onSubmit={submit} onChange={updatePreview} noValidate>
         <label>Name<input name="guest_name" required autoComplete="name" /></label>
         <label>Email<input name="guest_email" type="email" required autoComplete="email" /></label>
         <label>Check-in<input name="check_in" type="date" min={today} required /></label>
         <label>Check-out<input name="check_out" type="date" min={today} required /></label>
         <label>Guests<input name="guests" type="number" min={1} max={property.max_guests} step={1} defaultValue={1} required /></label>
+        <div aria-live="polite" aria-atomic="true">
+          {preview ? <>
+            <p>{preview.nights} {preview.nights === 1 ? "night" : "nights"} × {formatPrice(property.price_per_night)} per night</p>
+            <p><strong>Estimated total: {formatPrice(preview.total)}</strong></p>
+          </> : <p>Choose check-in and check-out dates to see nights and total price.</p>}
+        </div>
         <button
           type={needsLogin ? "button" : "submit"}
           onClick={needsLogin ? () => signIn(formRef.current) : undefined}

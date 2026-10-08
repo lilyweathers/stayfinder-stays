@@ -187,7 +187,7 @@ does not prove that PostgreSQL permissions or constraints work.
 | [x] | G8 | Sort by ascending or descending price in the backend. | GET /properties accepts sort=asc or sort=desc, validated and applied through Supabase database ordering by price_per_night with property_id as a stable tie-breaker. Live API checks passed in both directions with and without filters on 2026-10-08. All 26 backend tests and frontend TypeScript/ESLint checks pass; property-list sort dropdown implemented. |
 | [x] | G9 | Authenticated users can book from details; visitors are prompted to log in. | User confirmed the logged-out detail-page sign-in prompt, sign-in return with restored booking fields, and successful authenticated booking with success feedback and correct property/dates/guest count in Bookings on 2026-10-08. Backend booking creation also verified earlier. |
 | [x] | G10 | Reject invalid bookings and show understandable form errors. | API create/update now validate real YYYY-MM-DD dates, checkout after check-in, trimmed required name/property, valid email, and positive integer guests, returning 400 with field paths and messages. Create/edit forms show understandable errors and check displayed capacity. Past check-in is rejected in API/form using Europe/Stockholm, with same-day allowed. All 29 backend tests, TypeScript and ESLint pass. User confirmed invalid-form errors work and the browser date picker disables past dates on 2026-10-08. |
-| [ ] | G11 | Show nights and total price before submission. | Not implemented: no frontend nights/price preview. |
+| [x] | G11 | Show nights and total price before submission. | Booking form now previews calendar nights × current nightly price before submission; updates on field changes, restores after login, and clears after booking success. Calculation checks, frontend TypeScript and ESLint pass; user confirmed the live two-night preview shows 2,400 before submission on 2026-10-08. |
 | [ ] | G12 | Authenticated users can view, change, and delete bookings for a property. | My Properties lists owned properties and links to management pages with related bookings, property/booking editing, and confirm/cancel actions. Property editing uses PATCH; booking editing preserves status/identity. Frontend deletion and live browser verification remain. |
 | [ ] | G13 | Loading, fetch-error, and missing-property views exist. | Bookings loading/error states and property fetch-error messages implemented; detail route uses notFound() on 404. Property loading UI and live failure-state verification remain. |
 | [ ] | G14 | API returns appropriate status codes. | Automated tests cover 200/201/400/401/403/404/409/500 cases. Complete live status-code verification and invalid-date coverage remain. |
@@ -601,3 +601,21 @@ tests (including manually submitted past dates rejected before writes), this
 completes G10. Historical pending-verification notes in this log are superseded
 by this entry. VG3 database capacity and VG5 direct database time rules remain
 separate unfinished criteria.
+
+### Booking nights and estimated total preview (G11) - 2026-10-08
+
+BookingForm.tsx displays nights, nightly price, and estimated total above its
+submit/sign-in button. calculateBookingPreview in frontend/src/lib/booking-validation.ts
+uses UTC calendar-day differences to avoid daylight-saving off-by-one errors and
+rounds the displayed total to two decimal places. Missing/impossible/reversed/equal
+dates do not produce a price. Restored login drafts recalculate the preview;
+successful creation resets it. No client total is submitted to the API. Trusted
+saved pricing is still tracked separately under VG6.
+
+Calculation checks passed for two nights at 1200 (2400), a single night, a leap
+day, year boundary, both daylight-saving boundaries, decimal prices, and invalid
+dates. Frontend route type generation, TypeScript, and ESLint passed. The live
+property page returned 200 with the initial preview prompt. The user subsequently confirmed the browser preview works: October 10–12,
+2026 at Harbor Loft shows two nights at 1,200 and estimated total 2,400
+before submission. G11 is complete on calculation and user-reported browser
+evidence.

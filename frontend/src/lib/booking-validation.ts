@@ -30,3 +30,13 @@ export function validateBookingForm(values: BookingFormValues, maxGuests: number
   );
   return errors;
 }
+
+export function calculateBookingPreview(checkIn: string, checkOut: string, pricePerNight: number) {
+  if (!isCalendarDate(checkIn) || !isCalendarDate(checkOut)
+    || checkOut <= checkIn || !Number.isFinite(pricePerNight) || pricePerNight < 0) return null;
+  // Calendar nights use UTC so daylight-saving changes do not add or remove a night.
+  const nights = (Date.parse(checkOut + "T00:00:00Z") - Date.parse(checkIn + "T00:00:00Z")) / 86_400_000;
+  const total = Math.round((nights * pricePerNight + Number.EPSILON) * 100) / 100;
+  if (!Number.isFinite(total)) return null;
+  return { nights, total };
+}
