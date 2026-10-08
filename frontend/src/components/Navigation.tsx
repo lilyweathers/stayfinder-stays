@@ -56,7 +56,9 @@ export default function Navigation() {
       <Link href="/">StayFinder</Link>
       <Link href="/properties">Properties</Link>
       {user ? <>
+        <Link href="/my-properties">My Properties</Link>
         <Link href="/bookings">Bookings</Link>
+        <Link href="/profile">Profile</Link>
         <span>Signed in as {user.email || "StayFinder user"}</span>
         <button type="button" onClick={signOut} disabled={pending}>
           {pending ? "Signing out…" : "Sign out"}

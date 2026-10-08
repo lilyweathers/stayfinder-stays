@@ -106,6 +106,19 @@ does not prove that PostgreSQL permissions or constraints work.
 
 ### Frontend foundation (2026-10-08)
 
+- [x] Add owner property deletion with explicit confirmation and an atomic
+  database function that preserves history and cancels upcoming active bookings.
+- [ ] Apply database/007_property_deletion.sql and run database/tests/property_deletion.sql.
+- [ ] Verify property creation/editing/deletion and automatic cancellation in the browser.
+
+- [x] Add My Properties navigation and owned-property listing with management routes.
+- [x] Add owner property editing and related-booking edit/confirm/cancel controls.
+- [x] Add host-only confirmation API with conditional pending-status updates;
+  all 21 backend tests pass, including confirmation permissions/conflicts
+  and password-confirmed account deletion.
+- [ ] Apply database/006_booking_status_roles.sql and run database/tests/status_roles.sql.
+- [ ] Verify My Properties management and pending-booking actions in the browser.
+
 - [x] Add booking cancellation confirmation, pending/error/success feedback, and
   local status updates through POST /bookings/:id/cancel.
 - [x] Add API cancellation ownership, status, and check-in guards with conditional updates.
@@ -117,6 +130,29 @@ does not prove that PostgreSQL permissions or constraints work.
 - [x] Add reusable PropertyCard, PropertyList, and BookingForm components.
 - [x] Add login form and credentialed API requests for backend session cookies.
 - [x] Add bookings list with loading, error, empty, and sign-in states.
+- [x] Show retained bookings for deleted properties by default, with saved titles
+  when available and no broken property link.
+- [x] Apply database/011_permanent_property_deletion.sql and run user_deletion.sql
+  to verify owned property removal, retained bookings/titles, upcoming cancellation,
+  preserved past bookings, and guest access (user reports PASS on 2026-10-08;
+  fixtures rolled back).
+- [ ] Run database/tests/property_deletion.sql after 011 to verify the updated
+  Manage property deletion RPC and booking retention independently.
+- [x] Add authenticated Profile page with account details and password-confirmed
+  deletion. The backend verifies the password and deletes only the current user.
+- [x] Configure backend-only SUPABASE_ADMIN_KEY and verify profile/account deletion
+  with a temporary account in the browser (user-confirmed 2026-10-08).
+- [x] Apply database/010_user_deletion.sql and run database/tests/user_deletion.sql
+  to verify account deletion archives owned properties and cancels upcoming bookings
+  (user reports the database test passed on 2026-10-08; fixtures rolled back;
+  soft deletion subsequently superseded by migration 011).
+- [x] Separate guest Bookings from host management: the API filters guest lists by
+  the signed-in UID and verifies property ownership for host booking lists.
+  Covered by mocked API tests; live account separation remains to be verified.
+- [ ] Apply database/008_booking_access.sql and verify unrelated accounts cannot
+  read bookings directly in Supabase.
+- [ ] Run database/009_assign_current_bookings_to_test.sql once to assign all
+  currently existing bookings to test@gmail.com; verify its returned guest UIDs.
 - [x] Add property, booking, and API response types and shared API helper.
 - [x] Verify live backend properties match a direct read-only Supabase query:
   both returned the same six records; the user's frontend screenshots show them.
@@ -132,12 +168,12 @@ does not prove that PostgreSQL permissions or constraints work.
 | [ ] | G4 | Everyone can view the property list and individual details. | Public API and frontend list/detail routes implemented. Live list matches Supabase and is shown in user screenshots; live detail-page verification remains. |
 | [ ] | G5 | Filter by location, maximum price, and guest count. | Not implemented: property list does not apply location, price, or guest filters. |
 | [x] | G6 | Property writes require authentication in both API and database. | API guards and hosted basic RLS policies implemented. Live authenticated CRUD, anonymous API denial, and direct Supabase write restrictions confirmed by the user. Ownership is tracked under VG1. |
-| [ ] | G7 | An authenticated user can create a property using a frontend form. | Not implemented: no frontend property form. |
+| [x] | G7 | An authenticated user can create a property using a frontend form. | Create new property form added to My Properties with validation, pending/error/success feedback, and POST /properties. Backend assigns the signed-in user's owner_id. User confirmed creating a temporary account and property during the live account-deletion check on 2026-10-08. |
 | [ ] | G8 | Sort by ascending or descending price in the backend. | Not implemented: property list has no backend price sorting. |
 | [ ] | G9 | Authenticated users can book from details; visitors are prompted to log in. | BookingForm implemented on the detail page with a sign-in prompt on 401. Backend booking creation verified earlier; complete browser flow remains unverified. |
 | [ ] | G10 | Reject invalid bookings and show understandable form errors. | Backend Zod validates basic fields. Frontend validates date order and displays request errors; backend real calendar-date/date-order checks and detailed validation messages remain. |
 | [ ] | G11 | Show nights and total price before submission. | Not implemented: no frontend nights/price preview. |
-| [ ] | G12 | Authenticated users can view, change, and delete bookings for a property. | Protected API CRUD and frontend bookings list implemented. Frontend update/delete controls, property-specific filtering, live browser verification, and selected VG restrictions remain. |
+| [ ] | G12 | Authenticated users can view, change, and delete bookings for a property. | My Properties lists owned properties and links to management pages with related bookings, property/booking editing, and confirm/cancel actions. Property editing uses PATCH; booking editing preserves status/identity. Frontend deletion and live browser verification remain. |
 | [ ] | G13 | Loading, fetch-error, and missing-property views exist. | Bookings loading/error states and property fetch-error messages implemented; detail route uses notFound() on 404. Property loading UI and live failure-state verification remain. |
 | [ ] | G14 | API returns appropriate status codes. | Automated tests cover 200/201/400/401/403/404/409/500 cases. Complete live status-code verification and invalid-date coverage remain. |
 | [x] | G15 | Database permissions protect tables independently of the API. | RLS enabled and eight basic policies applied and verified in the dashboard. All 43 direct Supabase assertions passed according to the user's Postman report, covering anonymous restrictions and authenticated CRUD. |

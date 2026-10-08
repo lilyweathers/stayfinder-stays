@@ -32,6 +32,11 @@ test("API property mutations constrain owner and denied rows remain hidden", asy
   t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
     const url = new URL(String(input));
     if (url.pathname === "/auth/v1/user") return Response.json(user);
+    if (url.pathname === "/rest/v1/rpc/delete_property") {
+      assert.deepEqual(JSON.parse(String(init.body)), { p_property_id: "not-owned" });
+      assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + token);
+      return Response.json(null);
+    }
     assert.equal(url.pathname, "/rest/v1/properties");
     assert.equal(url.searchParams.get("owner_id"), "eq.guest-a");
     assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + token);
@@ -89,4 +94,65 @@ test("cancellation permits guest/host and rejects past, cancelled, unrelated and
   row = null;
   assert.equal((await request("/bookings/b1/cancel", "POST")).status, 404);
   assert.equal((await app.request("/bookings/b1/cancel", { method: "POST" })).status, 401);
+});
+
+test("confirmation requires host and pending future booking, including conditional-write conflicts", async (t) => {
+  let status = "pending";
+  let ownerId = "someone-else";
+  let date = "2099-01-01";
+  let missing = false;
+  let conflict = false;
+  let writes = 0;
+  t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
+    const url = new URL(String(input));
+    if (url.pathname === "/auth/v1/user") return Response.json(user);
+    if (url.pathname === "/rest/v1/properties") return Response.json([{ owner_id: ownerId }]);
+    if (init.method === "PATCH") {
+      writes++;
+      assert.deepEqual(JSON.parse(String(init.body)), { status: "confirmed" });
+      assert.equal(url.searchParams.get("status"), "eq.pending");
+      assert.match(url.searchParams.get("check_in")!, /^gte\./);
+      return Response.json(conflict ? [] : [{ ...booking, booking_id: "b1", status: "confirmed" }]);
+    }
+    return Response.json(missing ? [] : [{ ...booking, booking_id: "b1", guest_id: user.id, status, check_in: date }]);
+  });
+  assert.equal((await request("/bookings/b1/confirm", "POST")).status, 403);
+  ownerId = user.id;
+  assert.equal((await request("/bookings/b1/confirm", "POST")).status, 200);
+  for (const nextStatus of ["confirmed", "cancelled"]) {
+    status = nextStatus;
+    assert.equal((await request("/bookings/b1/confirm", "POST")).status, 409);
+  }
+  status = "pending"; date = "2000-01-01";
+  assert.equal((await request("/bookings/b1/confirm", "POST")).status, 409);
+  assert.equal(writes, 1);
+  date = "2099-01-01"; conflict = true;
+  assert.equal((await request("/bookings/b1/confirm", "POST")).status, 409);
+  missing = true;
+  assert.equal((await request("/bookings/b1/confirm", "POST")).status, 404);
+  assert.equal((await app.request("/bookings/b1/confirm", { method: "POST" })).status, 401);
+});
+
+test("guest listing uses authenticated guest ID and host listing checks property ownership", async (t) => {
+  let ownerId = "unrelated";
+  let bookingReads = 0;
+  t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
+    const url = new URL(String(input));
+    if (url.pathname === "/auth/v1/user") return Response.json(user);
+    if (url.pathname === "/rest/v1/properties") return Response.json([{ owner_id: ownerId }]);
+    assert.equal(url.pathname, "/rest/v1/bookings");
+    assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + token);
+    bookingReads++;
+    if (url.searchParams.has("property_id")) {
+      assert.equal(url.searchParams.get("property_id"), "eq.p1");
+      assert.equal(ownerId, user.id);
+    } else assert.equal(url.searchParams.get("guest_id"), "eq." + user.id);
+    return Response.json([]);
+  });
+  assert.equal((await request("/bookings?guest_id=victim", "GET")).status, 200);
+  assert.equal((await request("/bookings?property_id=p1", "GET")).status, 403);
+  assert.equal(bookingReads, 1);
+  ownerId = user.id;
+  assert.equal((await request("/bookings?property_id=p1", "GET")).status, 200);
+  assert.equal(bookingReads, 2);
 });

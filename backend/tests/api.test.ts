@@ -166,13 +166,17 @@ test("property writes use Supabase and preserve the route ID", async (t) => {
     price_per_night: 850, max_guests: 2,
   };
   const property = { ...body, property_id: "generated-id" };
-  const expectedMethods = ["POST", "PATCH", "DELETE"];
+  const expectedMethods = ["POST", "PATCH", "POST"];
   t.mock.method(globalThis, "fetch", async (input: string | URL | Request, init: RequestInit) => {
     const auth = authResponse(input);
     if (auth) return auth;
     const url = new URL(String(input));
     const method = expectedMethods.shift();
     assert.equal(init.method, method);
+    if (url.pathname === "/rest/v1/rpc/delete_property") {
+      assert.deepEqual(JSON.parse(String(init.body)), { p_property_id: "generated-id" });
+      return Response.json({ property, cancelled_bookings: 2 });
+    }
     assert.equal(url.pathname, "/rest/v1/properties");
     assert.equal(url.searchParams.get("select"), "*");
     if (method === "POST") {
@@ -200,7 +204,7 @@ test("property writes use Supabase and preserve the route ID", async (t) => {
   assert.deepEqual(await updated.json(), property);
   const deleted = await request("/properties/generated-id", { method: "DELETE" });
   assert.equal(deleted.status, 200);
-  assert.deepEqual(await deleted.json(), property);
+  assert.deepEqual(await deleted.json(), { message: "Property deleted", property, cancelled_bookings: 2 });
   assert.deepEqual(expectedMethods, []);
 });
 

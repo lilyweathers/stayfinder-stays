@@ -7,3 +7,5 @@ export interface Property {
   price_per_night: number;
   max_guests: number;
 }
+
+export type PropertyInput = Omit<Property, "property_id" | "owner_id">;

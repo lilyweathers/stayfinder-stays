@@ -78,3 +78,81 @@ on 2026-10-08. owner_id stores the account UID; the final query shows its email.
 Property POST automatically assigns the signed-in user's ID. A missing/null user
 returns 401; G6 and the ownership policy require authentication for creation.
 Nullable owner_id supports legacy/admin-managed records, not anonymous creation.
+
+## Host booking confirmation
+
+Apply `006_booking_status_roles.sql` after 002 and 004. New bookings must be
+pending; only their property's owner can transition pending to confirmed.
+Guest/host cancellation remains allowed by participant RLS; status reversal is
+blocked. Run `tests/status_roles.sql` to verify using rollback-only fixtures.
+These scripts have not been executed in the hosted database yet.
+The frontend management pages live under My Properties, and confirmation uses
+POST /bookings/:id/confirm. Property writes still require its owner.
+
+## Property deletion with booking cancellation
+
+Apply `007_property_deletion.sql` before running the updated backend: property
+queries now depend on deleted_at. DELETE /properties/:id calls the owner-checked
+delete_property RPC. It locks the property, cancels pending/confirmed bookings
+with check-in today or later (Europe/Stockholm), and sets deleted_at atomically.
+Active lists exclude the property. History is preserved; guests retain access
+to their booking records. Direct hard deletion and archiving through regular
+updates are blocked, and a database trigger blocks new bookings after deletion.
+The privileged RPC explicitly checks auth.uid() against owner_id; it does not
+accept an owner from the client. Only authenticated callers can execute it.
+
+Run `tests/property_deletion.sql` for rollback-only database verification. The
+migration and live checks have not been run here. Re-running older migrations
+that replace policies can remove these restrictions; apply migrations in order.
+
+## Separate guest and host booking views
+
+GET /bookings filters by the authenticated user's guest_id. Hosts use
+GET /bookings?property_id=...; the backend verifies property ownership first.
+Apply 008_booking_access.sql to add restrictive participant policies that also
+protect against any leftover shared-access permissive policy.
+009_assign_current_bookings_to_test.sql is a user-requested one-time reassignment
+of all current booking guest IDs to test@gmail.com. It preserves property owners
+and new API bookings still belong to their creator. Do not rerun 009 after other
+guests begin making new bookings. Hosted application of 008/009 is unverified.
+
+## Account deletion
+
+Apply `010_user_deletion.sql` after 007. Deleting an account through Supabase Auth
+archives all its properties and cancels their pending/confirmed bookings with
+check-in today or later (Europe/Stockholm). Past bookings and property rows are
+retained as history. Ownership/guest foreign keys use ON DELETE SET NULL so
+references do not block account deletion. This does not create a frontend
+account-deletion endpoint or grant users permission to delete accounts.
+Run `tests/user_deletion.sql` as administrator for rollback-only verification.
+The user confirmed the hosted database test passed on 2026-10-08. This is
+user-reported verification; test fixtures were rolled back.
+
+The frontend Profile page supports password-confirmed account deletion through
+DELETE /auth/account. Configure SUPABASE_ADMIN_KEY in backend/.env with a
+backend-only Supabase secret/service-role key and restart the backend. Keep
+SUPABASE_KEY as publishable/anon: the admin client is used only for deleting the
+verified current user's Auth account. Never put the admin key in frontend env.
+Migration 010 must be applied before using this action. Auth deletion activates
+its account-deletion trigger. API tests mock Supabase. The user confirmed a live
+temporary-account deletion on 2026-10-08, including removal of its property.
+
+## Permanent property deletion (supersedes soft deletion)
+
+Apply `011_permanent_property_deletion.sql` after 010. Deletion through Manage
+property or account deletion now permanently removes property rows and preserves
+all booking rows, including the old property UUID and a saved property title.
+Upcoming pending/confirmed bookings are cancelled; past statuses stay unchanged.
+This migration also permanently removes all previously archived property rows.
+Bookings for removed properties appear by default on the guest Bookings page,
+with their saved title and no property link. Access remains restricted to their
+guest once the property's owner relationship no longer exists.
+
+The property foreign key is removed so it cannot cascade-delete bookings or block
+deletion. The existing active-property insert trigger and immutable-identity
+trigger validate new bookings and prevent clients from moving them. Normal direct
+property DELETE remains blocked; owners must use the checked deletion RPC.
+Run `tests/property_deletion.sql` and `tests/user_deletion.sql` after 011 for
+rollback-only verification. The user confirmed application of 011 and a passing
+user_deletion.sql test on 2026-10-08 (user-reported; fixtures rolled back).
+The separate property_deletion.sql result after 011 remains unconfirmed.

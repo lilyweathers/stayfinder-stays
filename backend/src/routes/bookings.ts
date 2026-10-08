@@ -8,7 +8,20 @@ bookingApp.use("*", requireAuth);
 bookingApp.get("/", async (c) => {
   const supabase = c.get("supabase");
   try {
-    const { data, error } = await supabase.from("bookings").select("*");
+    const propertyId = c.req.query("property_id");
+    let query = supabase.from("bookings").select("*");
+    if (propertyId) {
+      const { data: property, error: ownerError } = await supabase.from("properties")
+        .select("owner_id").eq("property_id", propertyId).maybeSingle();
+      if (ownerError) throw ownerError;
+      if (property?.owner_id !== c.get("user")!.id) {
+        return c.json({ error: "Only the property owner can view all bookings for this property" }, 403);
+      }
+      query = query.eq("property_id", propertyId);
+    } else {
+      query = query.eq("guest_id", c.get("user")!.id);
+    }
+    const { data, error } = await query;
     if (error) throw error;
     return c.json(data);
   } catch (error) {
@@ -73,6 +86,31 @@ bookingApp.put("/:id", bookingValidator, async (c) => {
   } catch (error) {
     console.error("Failed to update booking", error);
     return c.json({ error: "Failed to update booking" }, 500);
+  }
+});
+
+bookingApp.post("/:id/confirm", async (c) => {
+  const supabase = c.get("supabase");
+  const id = c.req.param("id");
+  const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  try {
+    const { data: booking, error: readError } = await supabase.from("bookings").select("*").eq("booking_id", id).maybeSingle();
+    if (readError) throw readError;
+    if (!booking) return c.json({ error: "Booking not found" }, 404);
+    const { data: property, error: ownerError } = await supabase.from("properties").select("owner_id").eq("property_id", booking.property_id).maybeSingle();
+    if (ownerError) throw ownerError;
+    if (property?.owner_id !== c.get("user")!.id) return c.json({ error: "Only the property owner can confirm bookings" }, 403);
+    if (booking.status !== "pending" || booking.check_in < today) return c.json({ error: "Only pending bookings with current or future check-in can be confirmed" }, 409);
+    const { data, error } = await supabase.from("bookings").update({ status: "confirmed" })
+      .eq("booking_id", id).eq("status", "pending").gte("check_in", today).select("*").maybeSingle();
+    if (error?.code === "42501") return c.json({ error: "Only the property owner can confirm bookings" }, 403);
+    if (error?.code === "23514") return c.json({ error: "This booking cannot be confirmed" }, 409);
+    if (error) throw error;
+    if (!data) return c.json({ error: "Booking changed. Refresh and try again." }, 409);
+    return c.json(data);
+  } catch (error) {
+    console.error("Failed to confirm booking", error);
+    return c.json({ error: "Failed to confirm booking" }, 500);
   }
 });
 

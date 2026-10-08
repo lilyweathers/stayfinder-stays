@@ -10,7 +10,7 @@ const propertiesApp = new Hono({ strict: false });
 propertiesApp.get("/", async (c) => {
   const supabase = c.get("supabase");
   try {
-    const { data, error } = await supabase.from("properties").select("*");
+    const { data, error } = await supabase.from("properties").select("*").is("deleted_at", null);
     if (error) throw error;
     return c.json(data);
   } catch (error) {
@@ -26,6 +26,7 @@ propertiesApp.get("/:id", async (c) => {
       .from("properties")
       .select("*")
       .eq("property_id", c.req.param("id"))
+      .is("deleted_at", null)
       .maybeSingle();
     if (error) throw error;
     if (!data) return c.json({ error: "Property not found" }, 404);
@@ -103,16 +104,12 @@ propertiesApp.put("/:id", requireAuth, propertyValidator, async (c) => {
 propertiesApp.delete("/:id", requireAuth, async (c) => {
   const supabase = c.get("supabase");
   try {
-    const { data, error } = await supabase
-      .from("properties")
-      .delete()
-      .eq("property_id", c.req.param("id"))
-      .eq("owner_id", c.get("user")!.id)
-      .select("*")
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("delete_property", { p_property_id: c.req.param("id") });
+    if (error?.code === "42501") return c.json({ error: "Property access denied" }, 403);
+    if (error?.code === "22P02") return c.json({ error: "Invalid property ID" }, 400);
     if (error) throw error;
-    if (!data) return c.json({ error: "Property not found" }, 404);
-    return c.json(data);
+    if (!data?.property) return c.json({ error: "Property not found" }, 404);
+    return c.json({ message: "Property deleted", ...data });
   } catch (error) {
     console.error("Failed to delete property", error);
     return c.json({ error: "Failed to delete property" }, 500);
