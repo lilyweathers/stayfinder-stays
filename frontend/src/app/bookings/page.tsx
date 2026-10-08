@@ -1,42 +1,116 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ApiError, getBookings } from "@/lib/api";
+import { ApiError, getBookings, getProperties } from "@/lib/api";
 import type { Booking } from "@/types/booking";
+import type { Property } from "@/types/property";
+import CancelBookingButton from "@/components/CancelBookingButton";
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const [needsLogin, setNeedsLogin] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [propertyId, setPropertyId] = useState("");
+  const [status, setStatus] = useState("");
+  const [notice, setNotice] = useState("");
+
   useEffect(() => {
     let active = true;
-    getBookings().then(data => {
-      if (active) setBookings(data);
-    }).catch(error => {
+    async function load() {
+      const [result, propertyResult] = await Promise.allSettled([getBookings(), getProperties()]);
       if (!active) return;
-      setNeedsLogin(error instanceof ApiError && error.status === 401);
-      setError(error instanceof Error ? error.message : "Could not load bookings.");
-    }).finally(() => { if (active) setLoading(false); });
+      if (result.status === "fulfilled") setBookings(result.value);
+      else {
+        const unauthorized = result.reason instanceof ApiError && result.reason.status === 401;
+        setNeedsLogin(unauthorized);
+        setError(unauthorized ? "Sign in to view bookings." : "Could not load bookings. Please try again.");
+      }
+      if (propertyResult.status === "fulfilled") setProperties(propertyResult.value);
+      else setWarning("Property names are unavailable. Showing property references instead.");
+      setLoading(false);
+    }
+    void load();
     return () => { active = false; };
-  }, []);
+  }, [attempt]);
+
+  function retry() {
+    setLoading(true);
+    setError("");
+    setWarning("");
+    setNeedsLogin(false);
+    setBookings([]);
+    setAttempt(value => value + 1);
+  }
+
+  const propertyById = new Map(properties.map(property => [property.property_id, property]));
+  const bookedPropertyIds = [...new Set(bookings.map(booking => booking.property_id))];
+  const visibleBookings = bookings.filter(booking =>
+    (!propertyId || booking.property_id === propertyId) && (!status || booking.status === status),
+  );
 
   return (
     <main>
-      <h1>Your bookings</h1>
-      {loading && <p role="status">Loading bookings…</p>}
+      <h1>Bookings</h1>
+      <p>View your stays and bookings for properties you own.</p>
+      {notice && <p role="status">{notice}</p>}
+      {loading && <p role="status">Loading bookings...</p>}
       {error && <p role="alert">{error}</p>}
-      {needsLogin && <Link href="/login">Sign in to view your bookings</Link>}
-      {!loading && !error && bookings.length === 0 && <p>You have no bookings yet. <Link href="/properties">Browse properties</Link></p>}
-      {bookings.map(booking => (
-        <article className="card" key={booking.booking_id}>
-          <h2><Link href={`/properties/${encodeURIComponent(booking.property_id)}`}>View booked property</Link></h2>
-          <p>{booking.check_in} to {booking.check_out}</p>
-          <p>{booking.guests} guests · {booking.status}</p>
-          <p>Booking reference: {booking.booking_id}</p>
-        </article>
-      ))}
+      {needsLogin ? <Link href="/login">Sign in</Link> : !loading && (
+        <button type="button" onClick={retry}>{error ? "Try again" : "Refresh bookings"}</button>
+      )}
+      {!loading && !error && <>
+        {warning && <p role="status">{warning}</p>}
+        {bookings.length === 0 ? (
+          <p>No bookings to show yet. <Link href="/properties">Browse properties</Link></p>
+        ) : <>
+          <div className="booking-filters">
+            <label>Property
+              <select value={propertyId} onChange={event => setPropertyId(event.target.value)}>
+                <option value="">All booked properties</option>
+                {bookedPropertyIds.map(id => <option key={id} value={id}>{propertyById.get(id)?.title || id}</option>)}
+              </select>
+            </label>
+            <label>Status
+              <select value={status} onChange={event => setStatus(event.target.value)}>
+                <option value="">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </label>
+          </div>
+          <p role="status">Showing {visibleBookings.length} of {bookings.length} bookings</p>
+          {visibleBookings.length === 0 && <p>No bookings match these filters.</p>}
+          {visibleBookings.map(booking => {
+            const property = propertyById.get(booking.property_id);
+            return (
+              <article className="card" key={booking.booking_id}>
+                <h2>{property?.title || `Property ${booking.property_id}`}</h2>
+                {property && <p>{property.location}</p>}
+                <dl className="booking-details">
+                  <dt>Guest</dt><dd>{booking.guest_name}</dd>
+                  <dt>Email</dt><dd>{booking.guest_email}</dd>
+                  <dt>Check-in</dt><dd><time dateTime={booking.check_in}>{booking.check_in}</time></dd>
+                  <dt>Check-out</dt><dd><time dateTime={booking.check_out}>{booking.check_out}</time></dd>
+                  <dt>Guests</dt><dd>{booking.guests}</dd>
+                  <dt>Status</dt><dd>{booking.status}</dd>
+                  <dt>Booking reference</dt><dd>{booking.booking_id}</dd>
+                </dl>
+                <Link href={`/properties/${encodeURIComponent(booking.property_id)}`}>View property</Link>
+                <CancelBookingButton booking={booking} onCancelled={updated => {
+                  setBookings(current => current.map(item => item.booking_id === updated.booking_id ? updated : item));
+                  setNotice("Booking cancelled successfully.");
+                }} />
+              </article>
+            );
+          })}
+        </>}
+      </>}
     </main>
   );
 }

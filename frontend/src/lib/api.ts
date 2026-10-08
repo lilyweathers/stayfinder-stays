@@ -28,6 +28,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 export const getProperties = () => request<Property[]>("/properties");
 export const getProperty = (id: string) => request<Property>(`/properties/${encodeURIComponent(id)}`);
 export const getBookings = () => request<Booking[]>("/bookings");
+export const cancelBooking = (id: string) => request<Booking>(`/bookings/${encodeURIComponent(id)}/cancel`, {
+  method: "POST",
+});
 export const createBooking = (booking: NewBooking) => request<Booking>("/bookings", {
   method: "POST", body: JSON.stringify(booking),
 });

@@ -51,3 +51,42 @@ test("API translates database ownership rejection to 403", async (t) => {
   assert.equal((await request("/bookings", "POST", booking)).status, 403);
   assert.equal((await request("/bookings/b1", "PUT", booking)).status, 403);
 });
+
+test("cancellation permits guest/host and rejects past, cancelled, unrelated and changed bookings", async (t) => {
+  let row: Record<string, unknown> | null = { ...booking, booking_id: "b1", guest_id: user.id, status: "pending", check_in: "2099-01-01" };
+  let ownerId = "host";
+  let writeConflict = false;
+  let writes = 0;
+  t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
+    const url = new URL(String(input));
+    if (url.pathname === "/auth/v1/user") return Response.json(user);
+    if (url.pathname === "/rest/v1/properties") return Response.json([{ owner_id: ownerId }]);
+    assert.equal(url.pathname, "/rest/v1/bookings");
+    if (init.method === "PATCH") {
+      writes++;
+      assert.deepEqual(JSON.parse(String(init.body)), { status: "cancelled" });
+      assert.equal(url.searchParams.get("status"), "in.(pending,confirmed)");
+      assert.match(url.searchParams.get("check_in")!, /^gte\.\d{4}-\d{2}-\d{2}$/);
+      assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + token);
+      return Response.json(writeConflict ? [] : [{ ...row, status: "cancelled" }]);
+    }
+    return Response.json(row ? [row] : []);
+  });
+  assert.equal((await request("/bookings/b1/cancel", "POST")).status, 200);
+  row = { ...row, guest_id: "other", status: "confirmed" };
+  ownerId = user.id;
+  assert.equal((await request("/bookings/b1/cancel", "POST")).status, 200);
+  ownerId = "unrelated";
+  assert.equal((await request("/bookings/b1/cancel", "POST")).status, 403);
+  row = { ...row, guest_id: user.id, status: "cancelled" };
+  assert.equal((await request("/bookings/b1/cancel", "POST")).status, 409);
+  row = { ...row, status: "pending", check_in: "2000-01-01" };
+  assert.equal((await request("/bookings/b1/cancel", "POST")).status, 409);
+  assert.equal(writes, 2);
+  row = { ...row, check_in: "2099-01-01" };
+  writeConflict = true;
+  assert.equal((await request("/bookings/b1/cancel", "POST")).status, 409);
+  row = null;
+  assert.equal((await request("/bookings/b1/cancel", "POST")).status, 404);
+  assert.equal((await app.request("/bookings/b1/cancel", { method: "POST" })).status, 401);
+});

@@ -48,3 +48,18 @@ with the user's token; never substitute a service-role key in the backend.
 
 These migration and database verification scripts have not yet been executed
 against the hosted project. Mocked backend tests do not verify PostgreSQL RLS.
+
+## Booking cancellation
+
+Apply `004_booking_cancellation.sql` after the ownership migration. It blocks
+edits/deletions of cancelled bookings and bookings whose check-in date has
+passed, including direct database requests. The API exposes
+`POST /bookings/:id/cancel`; the frontend asks for confirmation and updates the
+returned booking's status without deleting the record. Guests and property
+owners can cancel pending/confirmed bookings. Same-day cancellation is allowed
+using Europe/Stockholm as the shared date boundary.
+
+Run `tests/cancellation.sql` after 004 to check the database rules with rollback-only
+fixtures. Neither the migration nor its live database checks have been run here.
+VG4 confirmation permissions/transitions and VG5 create-time date rules remain
+unfinished; this cancellation work does not complete those entire criteria.

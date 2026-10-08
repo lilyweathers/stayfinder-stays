@@ -34,3 +34,10 @@ label { display: grid; gap: 8px; }
 input, button { font: inherit; padding: 12px; border: 1px solid #888; border-radius: 4px; }
 button { background: #155e75; color: white; cursor: pointer; }
 button:disabled { opacity: .6; cursor: wait; }
+select { font: inherit; padding: 12px; border: 1px solid #888; border-radius: 4px; background: white; max-width: 100%; }
+.booking-filters { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 24px; }
+.booking-details { display: grid; grid-template-columns: minmax(100px, 140px) minmax(0, 1fr); gap: 12px; }
+.booking-details dt { font-weight: bold; }
+.booking-details dd { margin: 0; overflow-wrap: anywhere; }
+.booking-actions { margin-top: 20px; }
+.booking-actions button { margin-right: 12px; margin-bottom: 12px; }

@@ -94,6 +94,11 @@ does not prove that PostgreSQL permissions or constraints work.
 
 ### Frontend foundation (2026-10-08)
 
+- [x] Add booking cancellation confirmation, pending/error/success feedback, and
+  local status updates through POST /bookings/:id/cancel.
+- [x] Add API cancellation ownership, status, and check-in guards with conditional updates.
+- [ ] Apply database/004_booking_cancellation.sql and verify direct database cancellation rules.
+
 - [x] Add public property list and dynamic detail routes using the backend API.
 - [x] Add reusable PropertyCard, PropertyList, and BookingForm components.
 - [x] Add login form and credentialed API requests for backend session cookies.
@@ -175,6 +180,20 @@ These are proposed conventions, not extra requirements from the assignment.
 8. Verify all rules through API calls, direct database requests, and frontend flows.
 
 ## Evidence log
+
+### Booking cancellation implementation - 2026-10-08
+
+frontend/src/components/CancelBookingButton.tsx and frontend/src/app/bookings/page.tsx
+provide explicit cancellation confirmation and error/success feedback.
+POST /bookings/:id/cancel checks the guest/host role, pending/confirmed status,
+and check-in date, then conditionally updates only status to cancelled.
+Same-day cancellation is allowed; the date boundary uses Europe/Stockholm.
+The record is retained. All 17 backend mocked tests pass, including guest/host
+success, unrelated-user denial, past/cancelled/missing bookings, and a concurrent
+change. Frontend typecheck and lint pass. database/004_booking_cancellation.sql
+and database/tests/cancellation.sql are prepared but not applied/executed.
+Live browser cancellation remains unverified. VG4/VG5 remain incomplete, including
+confirmation permissions and create-time date enforcement.
 
 ### Frontend account controls - 2026-10-08
 
