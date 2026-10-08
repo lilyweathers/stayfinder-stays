@@ -118,7 +118,7 @@ propertiesApp.put("/:id", requireAuth, propertyValidator, async (c) => {
 propertiesApp.delete("/:id", requireAuth, async (c) => {
   const supabase = c.get("supabase");
   try {
-    const { data, error } = await supabase.rpc("delete_property", { p_property_id: c.req.param("id") });
+    const { data, error } = await supabase.rpc("delete_property", { p_property_id: c.req.param("id")! });
     if (error?.code === "42501") return c.json({ error: "Property access denied" }, 403);
     if (error?.code === "22P02") return c.json({ error: "Invalid property ID" }, 400);
     if (error) throw error;

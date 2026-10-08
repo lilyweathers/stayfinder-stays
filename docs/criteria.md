@@ -192,7 +192,7 @@ does not prove that PostgreSQL permissions or constraints work.
 | [x] | G13 | Loading, fetch-error, and missing-property views exist. | Added list/detail loading.tsx views and a friendly property not-found.tsx view with navigation. List/detail fetch errors offer recovery actions; Bookings loading/error states already exist. Live HTTP rendering verified missing-property handling and, in an isolated frontend with an unavailable API, loading/error/recovery output on both property routes. Frontend TypeScript/ESLint pass (2026-10-08). |
 | [x] | G14 | API returns appropriate status codes. | Automated tests cover 200/201/400/401/403/404/409/500 and invalid calendar dates. On 2026-10-08, an isolated running Hono server returned every listed status over real HTTP with simulated Supabase responses; hosted-account live checks are recorded separately. No hosted records were changed. |
 | [x] | G15 | Database permissions protect tables independently of the API. | RLS enabled and eight basic policies applied and verified in the dashboard. All 43 direct Supabase assertions passed according to the user's Postman report, covering anonymous restrictions and authenticated CRUD. |
-| [ ] | G16 | Backend and frontend data are typed. | Backend context/domain interfaces and frontend property/booking/API request-response types implemented; both TypeScript checks pass. Database response typing remains. |
+| [x] | G16 | Backend and frontend data are typed. | Backend context/domain and frontend request/response types are implemented. Added application-facing Database schema types for property/booking rows, inserts, updates, and delete_property RPC; every Supabase client is parameterized. Compile-only assertions reject invalid tables, writes, and RPC arguments. Both TypeScript checks, frontend ESLint, and all 30 backend tests pass (2026-10-08). |
 
 ## VG checklist: all seven selected
 
@@ -707,3 +707,22 @@ evidence; raw SQL results and browser response exports were not supplied.
   (user-confirmed passing instructed sequence on 2026-10-08).
 - [x] Verify host deletion of a current/future cancelled booking in the browser.
   (user-confirmed passing instructed sequence on 2026-10-08).
+
+### Database response typing (G16) - 2026-10-08
+
+backend/src/types/database.ts defines the application-facing public schema after
+migrations 001–012, including Row/Insert/Update types for properties/bookings,
+nullable owner/guest references and historical property titles, booking status
+values, and delete_property arguments/nullable result. Request SSR clients and
+auth verifier/admin clients use Database generics. Hono context retains the
+exact typed SSR client return type to match its installed SDK dependency.
+Database types are manually maintained from repository SQL and application fields,
+not generated from the hosted database; update them when the schema changes.
+
+backend/tests/database-types.ts provides compile-only assertions for inferred
+query/RPC responses and rejects unknown tables/functions, string prices, invalid
+statuses, missing insert fields, and wrong RPC argument types. No database
+requests are made by these assertions. Backend source/test compilation, all
+30 runtime backend tests, frontend route type generation, TypeScript, and
+ESLint passed. G16 is complete. No database migration or browser action is
+needed for this typing change.

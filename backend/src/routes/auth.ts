@@ -4,6 +4,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { createClient } from "@supabase/supabase-js";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
+import type { Database } from "../types/database.js";
 import { env } from "../env.js";
 
 export const authApp = new Hono({ strict: false });
@@ -29,7 +30,7 @@ authApp.delete("/account", requireAuth,
     if (!env.supabaseAdminKey) return c.json({ error: "Account deletion is not configured. Contact the administrator." }, 503);
     const options = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } };
     // Fresh client: password verification must not change the browser's session.
-    const verifier = createClient(env.supabaseUrl, env.supabaseKey, options);
+    const verifier = createClient<Database>(env.supabaseUrl, env.supabaseKey, options);
     const { data, error } = await verifier.auth.signInWithPassword({
       email: user.email, password: c.req.valid("json").password,
     });
@@ -37,7 +38,7 @@ authApp.delete("/account", requireAuth,
       return c.json({ error: "Password confirmation failed. Check your password and try again." }, 400);
     }
     // A dedicated admin client is used only here; ordinary requests still use RLS.
-    const admin = createClient(env.supabaseUrl, env.supabaseAdminKey, options);
+    const admin = createClient<Database>(env.supabaseUrl, env.supabaseAdminKey, options);
     const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
     if (deleteError) {
       await verifier.auth.signOut({ scope: "local" });

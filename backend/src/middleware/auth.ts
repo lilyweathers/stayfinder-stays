@@ -4,10 +4,11 @@ import { getCookie, setCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
 import { env } from "../env.js";
 import { supabaseKey, supabaseUrl } from "../lib/supabase.js";
+import type { Database } from "../types/database.js";
 import type { BasicSupabaseClient } from "../types/supabase.js";
 
 export function createSupabaseForRequest(c: Context): BasicSupabaseClient {
-  return createServerClient(supabaseUrl, supabaseKey, {
+  return createServerClient<Database>(supabaseUrl, supabaseKey, {
     cookies: {
       getAll: () => Object.entries(getCookie(c)).map(([name, value]) => ({ name, value })),
       setAll(cookiesToSet) {
