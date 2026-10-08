@@ -51,3 +51,28 @@ textarea { font: inherit; padding: 12px; border: 1px solid #888; border-radius: 
 .property-image { position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 6px; background: #e8eef0; display: grid; place-items: center; color: #52636b; margin-bottom: 20px; }
 .property-image img { object-fit: cover; }
 .property-image-detail { aspect-ratio: 16 / 9; max-height: 480px; }
+
+.home-page { max-width: 1120px; padding-top: 32px; }
+.home-hero { position: relative; isolation: isolate; overflow: hidden; border-radius: 16px; min-height: 520px; display: flex; align-items: center; background: #173c3a; color: white; }
+.home-hero > img { object-fit: cover; }
+.home-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(8, 26, 28, .88), rgba(8, 26, 28, .4)); z-index: 1; }
+.home-hero-content { position: relative; z-index: 2; padding: 64px; max-width: 690px; }
+.home-eyebrow { font-size: .75rem; font-weight: bold; letter-spacing: .16em; text-transform: uppercase; }
+.home-hero h1 { font-size: clamp(2.4rem, 5vw, 4rem); line-height: 1.08; letter-spacing: -.04em; }
+.home-hero-content > p:not(.home-eyebrow) { max-width: 440px; color: #edf3f1; font-size: 1.1rem; margin: 24px 0 32px; }
+.home-button { display: inline-flex; align-items: center; gap: 32px; padding: 16px 24px; border-radius: 6px; background: #fff; color: #173c3a; text-decoration: none; font-weight: bold; }
+.home-button:hover { background: #e8f1ed; }
+.home-button:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
+.home-featured { margin-top: 64px; }
+.home-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 24px; }
+.home-section-heading .home-eyebrow { color: #155e75; margin-bottom: 8px; }
+.home-section-heading h2 { font-size: 2rem; letter-spacing: -.03em; margin: 0; }
+.home-section-heading p:last-child { color: #52636b; margin-bottom: 0; }
+.home-section-heading > a { flex-shrink: 0; }
+@media (max-width: 600px) {
+  .home-page { padding: 20px 16px 40px; }
+  .home-hero { min-height: 460px; }
+  .home-hero-content { padding: 36px 24px; }
+  .home-section-heading { align-items: flex-start; flex-direction: column; gap: 16px; }
+  .home-featured { margin-top: 40px; }
+}
