@@ -190,7 +190,7 @@ does not prove that PostgreSQL permissions or constraints work.
 | [x] | G11 | Show nights and total price before submission. | Booking form now previews calendar nights × current nightly price before submission; updates on field changes, restores after login, and clears after booking success. Calculation checks, frontend TypeScript and ESLint pass; user confirmed the live two-night preview shows 2,400 before submission on 2026-10-08. |
 | [x] | G12 | Authenticated users can view, change, and delete bookings for a property. | My Properties viewing/editing and pending-booking actions were user-verified. Added Delete booking with confirmation and list removal in owner management; API enforces participant ownership and active current/future dates, with conditional deletion and database denial translation. Existing RLS and migration 004 enforce database restrictions. All 30 backend tests and frontend type/lint checks pass; user confirmed browser deletion removes the booking and displays success on 2026-10-08. |
 | [x] | G13 | Loading, fetch-error, and missing-property views exist. | Added list/detail loading.tsx views and a friendly property not-found.tsx view with navigation. List/detail fetch errors offer recovery actions; Bookings loading/error states already exist. Live HTTP rendering verified missing-property handling and, in an isolated frontend with an unavailable API, loading/error/recovery output on both property routes. Frontend TypeScript/ESLint pass (2026-10-08). |
-| [ ] | G14 | API returns appropriate status codes. | Automated tests cover 200/201/400/401/403/404/409/500 cases. Complete live status-code verification and invalid-date coverage remain. |
+| [x] | G14 | API returns appropriate status codes. | Automated tests cover 200/201/400/401/403/404/409/500 and invalid calendar dates. On 2026-10-08, an isolated running Hono server returned every listed status over real HTTP with simulated Supabase responses; hosted-account live checks are recorded separately. No hosted records were changed. |
 | [x] | G15 | Database permissions protect tables independently of the API. | RLS enabled and eight basic policies applied and verified in the dashboard. All 43 direct Supabase assertions passed according to the user's Postman report, covering anonymous restrictions and authenticated CRUD. |
 | [ ] | G16 | Backend and frontend data are typed. | Backend context/domain interfaces and frontend property/booking/API request-response types implemented; both TypeScript checks pass. Database response typing remains. |
 
@@ -661,3 +661,30 @@ observed server-rendered/streamed HTTP checks, not browser screenshot evidence.
 Next.js streamed responses may return HTTP 200 while rendering not-found UI;
 the backend still returns 404 for a missing property. Frontend route generation,
 TypeScript, and ESLint passed. G13 is complete.
+
+### API HTTP status verification (G14) - 2026-10-08
+
+An isolated instance of the compiled current Hono API and a local simulated
+Supabase HTTP server ran on ephemeral loopback ports. Node fetch made actual
+HTTP requests to Hono; neither app.request nor a global fetch override was used.
+Auth used a synthetic test session verified by the simulated Auth endpoint.
+No hosted Supabase data or real account sessions were used. Both servers closed
+after the checks. This verifies real HTTP transport and API behavior with
+controlled dependencies; it is not additional hosted-database evidence.
+
+| Check | Observed status/result |
+| --- | --- |
+| GET / | 200, StayFinder API |
+| POST /bookings with valid future input | 201, created booking with verified test guest ID and pending status |
+| POST /bookings with February 30 | 400, check_in field path and real-calendar-date message |
+| GET /bookings without session | 401, Unauthorized |
+| POST /properties with disallowed Origin | 403, Origin not allowed |
+| GET /bookings/missing-booking | 404, Booking not found |
+| DELETE /bookings/cancelled-booking | 409, Cancelled bookings cannot be deleted |
+| GET /properties with simulated database failure | 500, generic Failed to read properties message |
+
+All eight HTTP assertions passed. Together with the 30 passing backend tests
+and previously recorded real-account/browser evidence, this completes G14.
+The initial note requiring complete live status verification is superseded
+by this explicitly scoped HTTP evidence; no claim is made that every status
+was induced against the hosted project.
