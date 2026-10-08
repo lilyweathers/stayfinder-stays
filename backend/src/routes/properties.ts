@@ -57,10 +57,10 @@ propertiesApp.post("/", requireAuth, propertyValidator, async (c) => {
   if (!user) return c.json({ error: "Unauthorized" }, 401);
   try {
     const propertyBody: NewProperty = c.req.valid("json");
-    const { title, description, location, price_per_night, max_guests } = propertyBody;
+    const { title, description, location, price_per_night, max_guests, image_url } = propertyBody;
     const { data, error } = await supabase
       .from("properties")
-      .insert({ title, description, location, price_per_night, max_guests, owner_id: user.id })
+      .insert({ title, description, location, price_per_night, max_guests, ...(image_url !== undefined ? { image_url } : {}), owner_id: user.id })
       .select("*")
       .single();
     if (error?.code === "42501") return c.json({ error: "Property access denied" }, 403);

@@ -1,3 +1,4 @@
+import PropertyImage from "@/components/PropertyImage";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BookingForm from "@/components/BookingForm";
@@ -16,6 +17,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
     <main>
       <h1>{property.title}</h1>
       <p>{property.location}</p>
+      <PropertyImage src={property.image_url} title={property.title} detail />
       <p>{property.description}</p>
       <p>{property.price_per_night} per night · Up to {property.max_guests} guests</p>
       <BookingForm property={property} />

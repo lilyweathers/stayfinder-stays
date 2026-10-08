@@ -18,6 +18,7 @@ export default function CreatePropertyForm({ onCreated, onClose }: {
     setPending(true); setError(""); setNeedsLogin(false);
     try {
       const property = await createProperty({
+        image_url: String(data.get("image_url") ?? "").trim() || null,
         title: String(data.get("title")).trim(),
         description: String(data.get("description")).trim(),
         location: String(data.get("location")).trim(),
@@ -35,6 +36,7 @@ export default function CreatePropertyForm({ onCreated, onClose }: {
     <form onSubmit={submit}>
       <label>Title<input name="title" minLength={2} required /></label>
       <label>Description<textarea name="description" minLength={3} required /></label>
+      <label>Image URL (optional)<input name="image_url" type="url" pattern="https://.*" placeholder="https://…" /></label>
       <label>Location<input name="location" minLength={2} required /></label>
       <label>Price per night<input name="price_per_night" type="number" min={100} step="0.01" required /></label>
       <label>Maximum guests<input name="max_guests" type="number" min={1} step={1} required /></label>

@@ -3,6 +3,7 @@ import * as z from "zod";
 
 const propertySchema = z
   .object({
+    image_url: z.string().trim().url("Enter a valid image URL").refine(value => value.startsWith("https://"), "Image URL must use HTTPS").nullable().optional(),
     property_id: z.string().min(1).optional(),
     title: z.string().min(2, "Title must contain at least 2 characters"),
     description: z

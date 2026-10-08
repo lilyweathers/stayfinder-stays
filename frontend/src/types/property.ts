@@ -6,6 +6,7 @@ export interface Property {
   location: string;
   price_per_night: number;
   max_guests: number;
+  image_url?: string | null;
 }
 
 export type PropertyInput = Omit<Property, "property_id" | "owner_id">;

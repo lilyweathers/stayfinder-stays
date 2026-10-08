@@ -19,6 +19,7 @@ export default function PropertyEditForm({ property, onSaved }: {
     setNotice("");
     try {
       const updated = await updateProperty(property.property_id, {
+        image_url: String(data.get("image_url") ?? "").trim() || null,
         title: String(data.get("title")).trim(),
         description: String(data.get("description")).trim(),
         location: String(data.get("location")).trim(),
@@ -37,6 +38,7 @@ export default function PropertyEditForm({ property, onSaved }: {
     {editing ? <form onSubmit={submit}>
       <label>Title<input name="title" minLength={2} required defaultValue={property.title} /></label>
       <label>Description<textarea name="description" minLength={3} required defaultValue={property.description} /></label>
+      <label>Image URL (optional)<input name="image_url" type="url" pattern="https://.*" placeholder="https://…" defaultValue={property.image_url ?? ""} /></label>
       <label>Location<input name="location" minLength={2} required defaultValue={property.location} /></label>
       <label>Price per night<input name="price_per_night" type="number" min={100} step="0.01" required defaultValue={property.price_per_night} /></label>
       <label>Maximum guests<input name="max_guests" type="number" min={1} step={1} required defaultValue={property.max_guests} /></label>

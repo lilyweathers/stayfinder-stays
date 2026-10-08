@@ -1,4 +1,4 @@
-// Application-facing public schema after migrations 001–012.
+// Application-facing public schema after migrations 001–013.
 // Maintained from the repository SQL and API fields; update with schema changes.
 export type BookingStatus = "pending" | "confirmed" | "cancelled";
 
@@ -10,12 +10,13 @@ export type PropertyRow = {
   location: string;
   price_per_night: number;
   max_guests: number;
+  image_url: string | null;
   created_at: string;
   deleted_at: string | null;
 };
 export type PropertyInsert = Pick<PropertyRow,
   "title" | "description" | "location" | "price_per_night" | "max_guests">
-  & Partial<Pick<PropertyRow, "property_id" | "owner_id" | "created_at" | "deleted_at">>;
+  & Partial<Pick<PropertyRow, "property_id" | "owner_id" | "created_at" | "deleted_at" | "image_url">>;
 
 export type BookingRow = {
   booking_id: string;
