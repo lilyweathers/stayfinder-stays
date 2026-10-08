@@ -63,3 +63,18 @@ Run `tests/cancellation.sql` after 004 to check the database rules with rollback
 fixtures. Neither the migration nor its live database checks have been run here.
 VG4 confirmation permissions/transitions and VG5 create-time date rules remain
 unfinished; this cancellation work does not complete those entire criteria.
+
+## Transfer original properties to the host account
+
+The user subsequently requested host@gmail.com own the six original properties.
+Run `005_assign_properties_to_host.sql` as administrator after creating that
+Supabase account. The script transfers exactly those six records and returns
+their ownership emails for verification. Booking guest assignments are preserved.
+The earlier backfill.sql property expectations describe the previous test@gmail.com
+assignment and will no longer match after this transfer. Use 005's final SELECT
+to verify the new property assignments. The user confirmed running the transfer
+on 2026-10-08. owner_id stores the account UID; the final query shows its email.
+
+Property POST automatically assigns the signed-in user's ID. A missing/null user
+returns 401; G6 and the ownership policy require authentication for creation.
+Nullable owner_id supports legacy/admin-managed records, not anonymous creation.

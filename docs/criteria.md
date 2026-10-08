@@ -86,6 +86,11 @@ does not prove that PostgreSQL permissions or constraints work.
 - [x] Run direct ownership checks with host, guest A, guest B, and anonymous roles
   (user-confirmed 2026-10-08; entire script completed without errors).
 - [ ] Verify ownership through live API/browser requests with both real accounts.
+- [x] Apply database/005_assign_properties_to_host.sql and verify all six original
+  properties are owned by host@gmail.com (user-confirmed 2026-10-08).
+  The script requires exactly six matched properties and stores auth.users.id
+  as owner_id; its final query displays the account email for verification.
+  Booking guest assignments stay unchanged.
 
 ### Checks and supporting files
 
