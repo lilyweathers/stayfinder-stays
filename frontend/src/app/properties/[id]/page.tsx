@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import BookingForm from "@/components/BookingForm";
 import { ApiError, getProperty } from "@/lib/api";
@@ -9,7 +10,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
     property = await getProperty(id);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) notFound();
-    return <main><h1>Property</h1><p role="alert">Could not load this property. Please try again later.</p></main>;
+    return <main><h1>Property</h1><p role="alert">Could not load this property. Please try again.</p><p><a href={`/properties/${encodeURIComponent(id)}`}>Try again</a></p><Link href="/properties">Browse properties</Link></main>;
   }
   return (
     <main>

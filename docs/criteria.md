@@ -189,7 +189,7 @@ does not prove that PostgreSQL permissions or constraints work.
 | [x] | G10 | Reject invalid bookings and show understandable form errors. | API create/update now validate real YYYY-MM-DD dates, checkout after check-in, trimmed required name/property, valid email, and positive integer guests, returning 400 with field paths and messages. Create/edit forms show understandable errors and check displayed capacity. Past check-in is rejected in API/form using Europe/Stockholm, with same-day allowed. All 29 backend tests, TypeScript and ESLint pass. User confirmed invalid-form errors work and the browser date picker disables past dates on 2026-10-08. |
 | [x] | G11 | Show nights and total price before submission. | Booking form now previews calendar nights × current nightly price before submission; updates on field changes, restores after login, and clears after booking success. Calculation checks, frontend TypeScript and ESLint pass; user confirmed the live two-night preview shows 2,400 before submission on 2026-10-08. |
 | [x] | G12 | Authenticated users can view, change, and delete bookings for a property. | My Properties viewing/editing and pending-booking actions were user-verified. Added Delete booking with confirmation and list removal in owner management; API enforces participant ownership and active current/future dates, with conditional deletion and database denial translation. Existing RLS and migration 004 enforce database restrictions. All 30 backend tests and frontend type/lint checks pass; user confirmed browser deletion removes the booking and displays success on 2026-10-08. |
-| [ ] | G13 | Loading, fetch-error, and missing-property views exist. | Bookings loading/error states and property fetch-error messages implemented; detail route uses notFound() on 404. Property loading UI and live failure-state verification remain. |
+| [x] | G13 | Loading, fetch-error, and missing-property views exist. | Added list/detail loading.tsx views and a friendly property not-found.tsx view with navigation. List/detail fetch errors offer recovery actions; Bookings loading/error states already exist. Live HTTP rendering verified missing-property handling and, in an isolated frontend with an unavailable API, loading/error/recovery output on both property routes. Frontend TypeScript/ESLint pass (2026-10-08). |
 | [ ] | G14 | API returns appropriate status codes. | Automated tests cover 200/201/400/401/403/404/409/500 cases. Complete live status-code verification and invalid-date coverage remain. |
 | [x] | G15 | Database permissions protect tables independently of the API. | RLS enabled and eight basic policies applied and verified in the dashboard. All 43 direct Supabase assertions passed according to the user's Postman report, covering anonymous restrictions and authenticated CRUD. |
 | [ ] | G16 | Backend and frontend data are typed. | Backend context/domain interfaces and frontend property/booking/API request-response types implemented; both TypeScript checks pass. Database response typing remains. |
@@ -642,3 +642,22 @@ The user subsequently confirmed the instructed browser deletion check passed:
 confirmation deletes the disposable future booking, removes it from the list,
 and shows Booking deleted. Alongside previously verified viewing/editing and
 the passing permission tests, this completes G12 on user-reported browser evidence.
+
+### Property loading, error, and missing views (G13) - 2026-10-08
+
+Added frontend/src/app/properties/loading.tsx and [id]/loading.tsx with
+accessible status text and busy containers. Added [id]/not-found.tsx with
+Property not found, an explanation, and Browse properties navigation. Detail
+fetch errors offer Try again and Browse properties; list errors preserve filter
+controls and explain how to retry/clear filters.
+
+Live localhost:3001 HTTP rendering for the absent UUID
+00000000-0000-4000-8000-000000000000 contained the detail loading fallback and
+friendly not-found output. An isolated copy of the frontend on port 3002,
+configured to an unavailable API, returned the list/detail loading fallback,
+fetch-error messages, and recovery actions. The temporary server was stopped;
+the user app and backend were not stopped or reconfigured. These are independently
+observed server-rendered/streamed HTTP checks, not browser screenshot evidence.
+Next.js streamed responses may return HTTP 200 while rendering not-found UI;
+the backend still returns 404 for a missing property. Frontend route generation,
+TypeScript, and ESLint passed. G13 is complete.

@@ -42,7 +42,9 @@ export default async function PropertiesPage({ searchParams }: {
       <button type="submit">Apply filters</button>
       <Link href="/properties">Clear filters</Link>
     </form>
-    {error ? <p role="alert">{error}</p> : <>
+    {error ? <div><p role="alert">{error}</p>
+      <p>Use Apply filters to try again, or <Link href="/properties">clear filters</Link>.</p>
+    </div> : <>
       <p role="status">{properties.length} {properties.length === 1 ? "property" : "properties"} found</p>
       <PropertyList properties={properties} emptyMessage={filtered
         ? "No properties match your filters. Try a different location, price, or guest count."
