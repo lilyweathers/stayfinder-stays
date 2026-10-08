@@ -22,15 +22,15 @@ does not prove that PostgreSQL permissions or constraints work.
 - Thirteen mocked API tests cover CRUD, auth cookies, anonymous denial, refresh,
   token forwarding to database requests, validation, and CORS.
 - Frontend now includes public property list/detail pages, login, a booking form,
-  a bookings list, shared API helpers, and request/response types. Registration,
-  logout, session display, and browser persistence verification remain unfinished.
+  a bookings list, shared API helpers, and request/response types. Browser registration, login, logout, session display, and reload persistence
+  were subsequently verified by the user on 2026-10-08.
 - The user confirmed
   the live Postman me/logout sequence passed and reports successful property and
   booking CRUD. Live anonymous API denial and public property reads are also
   user-confirmed. The user also reports all 43 direct Supabase RLS assertions passed.
 - Ownership policies are now active: the user confirmed the full direct database
-  ownership test script passed without errors on 2026-10-08. Full VG1 live API/browser
-  verification and the other VG rules remain unfinished.
+  ownership test script passed without errors on 2026-10-08. Live property ownership and host booking-list authorization were subsequently
+  verified with both real accounts; remaining VG1 cases and other VG rules are unfinished.
 
 ## Completed milestones
 
@@ -52,8 +52,10 @@ does not prove that PostgreSQL permissions or constraints work.
 - [x] Verify live me and logout with recorded Postman results (user-confirmed
   sequence on 2026-10-06; see evidence log).
 - [x] Add frontend registration/login/logout controls and session display.
-- [ ] Verify the complete browser registration/login/logout flow and session display.
-- [ ] Verify persistence after browser reload.
+- [x] Verify the complete browser registration/login/logout flow and session display
+  (user-confirmed browser checks on 2026-10-08; see evidence log).
+- [x] Verify persistence after browser reload
+  (user-confirmed browser reload and authenticated Bookings access on 2026-10-08).
 
 ### Protected data (G6, G12, G15)
 
@@ -85,7 +87,10 @@ does not prove that PostgreSQL permissions or constraints work.
   the follow-up summary query worked after being given the expected counts.
 - [x] Run direct ownership checks with host, guest A, guest B, and anonymous roles
   (user-confirmed 2026-10-08; entire script completed without errors).
-- [ ] Verify ownership through live API/browser requests with both real accounts.
+- [x] Verify ownership through live API/browser requests with both real accounts
+  (2026-10-08: user-reported browser separation and supplied Bash responses;
+  property PATCH denied for guest and allowed for host; host booking-list access
+  denied for guest and allowed for host).
 - [x] Apply database/005_assign_properties_to_host.sql and verify all six original
   properties are owned by host@gmail.com (user-confirmed 2026-10-08).
   The script requires exactly six matched properties and stores auth.users.id
@@ -108,16 +113,20 @@ does not prove that PostgreSQL permissions or constraints work.
 
 - [x] Add owner property deletion with explicit confirmation and an atomic
   database function that preserves history and cancels upcoming active bookings.
-- [ ] Apply database/007_property_deletion.sql and run database/tests/property_deletion.sql.
-- [ ] Verify property creation/editing/deletion and automatic cancellation in the browser.
+- [x] Apply database/007_property_deletion.sql and run database/tests/property_deletion.sql
+  (user-confirmed successful application and passing test on 2026-10-08).
+- [x] Verify property creation/editing/deletion and automatic cancellation in the browser
+  (user-confirmed working browser flow on 2026-10-08).
 
 - [x] Add My Properties navigation and owned-property listing with management routes.
 - [x] Add owner property editing and related-booking edit/confirm/cancel controls.
 - [x] Add host-only confirmation API with conditional pending-status updates;
   all 21 backend tests pass, including confirmation permissions/conflicts
   and password-confirmed account deletion.
-- [ ] Apply database/006_booking_status_roles.sql and run database/tests/status_roles.sql.
-- [ ] Verify My Properties management and pending-booking actions in the browser.
+- [x] Apply database/006_booking_status_roles.sql and run database/tests/status_roles.sql
+  (user-confirmed successful application and passing test on 2026-10-08).
+- [x] Verify My Properties management and pending-booking actions in the browser
+  (user-confirmed working browser flow on 2026-10-08).
 
 - [x] Add booking cancellation confirmation, pending/error/success feedback, and
   local status updates through POST /bookings/:id/cancel.
@@ -136,8 +145,9 @@ does not prove that PostgreSQL permissions or constraints work.
   to verify owned property removal, retained bookings/titles, upcoming cancellation,
   preserved past bookings, and guest access (user reports PASS on 2026-10-08;
   fixtures rolled back).
-- [ ] Run database/tests/property_deletion.sql after 011 to verify the updated
-  Manage property deletion RPC and booking retention independently.
+- [x] Run database/tests/property_deletion.sql after 011 to verify the updated
+  Manage property deletion RPC and booking retention independently
+  (user-confirmed passing test after migration 011 on 2026-10-08).
 - [x] Add authenticated Profile page with account details and password-confirmed
   deletion. The backend verifies the password and deletes only the current user.
 - [x] Configure backend-only SUPABASE_ADMIN_KEY and verify profile/account deletion
@@ -149,22 +159,27 @@ does not prove that PostgreSQL permissions or constraints work.
 - [x] Separate guest Bookings from host management: the API filters guest lists by
   the signed-in UID and verifies property ownership for host booking lists.
   Covered by mocked API tests; live account separation remains to be verified.
-- [ ] Apply database/008_booking_access.sql and verify unrelated accounts cannot
-  read bookings directly in Supabase.
-- [ ] Run database/009_assign_current_bookings_to_test.sql once to assign all
-  currently existing bookings to test@gmail.com; verify its returned guest UIDs.
+- [x] Apply database/008_booking_access.sql and verify unrelated accounts cannot
+  read bookings directly in Supabase
+  (user-confirmed migration application and supplied passing direct read test
+  on 2026-10-08; see evidence log).
+- [x] Run database/009_assign_current_bookings_to_test.sql once to assign all
+  currently existing bookings to test@gmail.com; verify its returned guest UIDs
+  (user-confirmed completion and returned guest UID verification on 2026-10-08).
 - [x] Add property, booking, and API response types and shared API helper.
 - [x] Verify live backend properties match a direct read-only Supabase query:
   both returned the same six records; the user's frontend screenshots show them.
-- [ ] Verify live property detail rendering and the complete browser login/booking flow.
+- [x] Verify live property detail rendering and the complete browser login/booking flow
+  (user-confirmed detail display, signed-out prompt, login, successful booking,
+  and correct property/dates/guest count in Bookings on 2026-10-08).
 
 ## G checklist
 
 | Complete | Criterion | Required result | Current progress and remaining verification |
 | --- | --- | --- | --- |
-| [ ] | G1 | Visitors can register, log in, and log out. | Frontend register/login forms and logout control implemented. User confirmed registration, Mailtrap email confirmation, and login for user@gmail.com. Live browser logout verification remains. |
-| [ ] | G2 | Login survives reload; the app can identify the logged-in user. | Cookie sessions and current-user navigation implemented. Automated backend auth tests pass; frontend browser reload checks remain. |
-| [ ] | G3 | Navigation changes for authenticated and anonymous visitors. | Navigation uses /auth/me to show bookings, email, and logout for signed-in users, or login/register for visitors. Full browser transition verification remains. |
+| [x] | G1 | Visitors can register, log in, and log out. | Browser registration, confirmation/login sequence, session display, and logout verified by user reports on 2026-10-08. After logout, Bookings prompts sign-in. |
+| [x] | G2 | Login survives reload; the app can identify the logged-in user. | Cookie sessions and current-user navigation implemented. Automated backend auth tests pass; user confirmed email and Logout remain after Ctrl+R and Bookings loads without a sign-in prompt on 2026-10-08. |
+| [x] | G3 | Navigation changes for authenticated and anonymous visitors. | User confirmed signed-in email and Logout, followed by email removal and Login/Register returning after logout on 2026-10-08. Signed-out Bookings displays a sign-in prompt. |
 | [ ] | G4 | Everyone can view the property list and individual details. | Public API and frontend list/detail routes implemented. Live list matches Supabase and is shown in user screenshots; live detail-page verification remains. |
 | [ ] | G5 | Filter by location, maximum price, and guest count. | Not implemented: property list does not apply location, price, or guest filters. |
 | [x] | G6 | Property writes require authentication in both API and database. | API guards and hosted basic RLS policies implemented. Live authenticated CRUD, anonymous API denial, and direct Supabase write restrictions confirmed by the user. Ownership is tracked under VG1. |
@@ -186,7 +201,7 @@ behavior must be backed by database enforcement or database queries as appropria
 
 | Done | Criterion | Planned location and reason | Verification to record |
 | --- | --- | --- | --- |
-| [ ] | VG1 Ownership | API derives ownership from verified identity, constrains property writes, and uses the user's token for booking RLS. database/002_ownership.sql replaces shared policies and prevents ownership/booking-property transfers. | Automated API ownership checks pass. User confirmed entire database/tests/ownership.sql passed on 2026-10-08, covering guest isolation, host visibility, nonowner mutations, and spoofed ownership. Existing-record backfill verified with supplied booking screenshot and user-confirmed summary query. Live API/browser checks with both real accounts remain unverified. |
+| [ ] | VG1 Ownership | API derives ownership from verified identity, constrains property writes, and uses the user's token for booking RLS. database/002_ownership.sql replaces shared policies and prevents ownership/booking-property transfers. | Automated API ownership checks pass. User confirmed entire database/tests/ownership.sql passed on 2026-10-08, covering guest isolation, host visibility, nonowner mutations, and spoofed ownership. Existing-record backfill verified with supplied booking screenshot and user-confirmed summary query. Live browser account separation, guest property PATCH denial (404), host property PATCH success (200), and guest/host property-booking list authorization (403/200) verified on 2026-10-08. Live creation ownership assignment, booking mutation permissions, and unrelated-user booking isolation remain unverified. |
 | [ ] | VG2 No overlapping bookings | API reports a clear conflict; database enforces overlap protection atomically so concurrent requests cannot both succeed. Pending and confirmed bookings block dates; cancelled bookings do not. | Overlapping create and update rejected; unchanged booking does not clash with itself; cancelled booking ignored; back-to-back stays allowed under the planned date convention; simultaneous overlapping writes yield one success. |
 | [ ] | VG3 Capacity | API checks the property's current database capacity; database enforces the same rule on booking creation and updates. Client capacity values are never trusted. | Exactly max_guests allowed; max_guests + 1 rejected; use changed capacity; forged client capacity cannot bypass rule. |
 | [ ] | VG4 Status and roles | API checks roles and translates failures; database enforces transitions and who can perform them. Only property owner confirms; guest or owner cancels. | pending -> confirmed by owner; pending/confirmed -> cancelled by guest or owner; guest confirmation denied; unrelated user denied; cancelled booking edits denied; confirmed -> pending denied. |
@@ -286,7 +301,7 @@ test@gmail.com. The user confirmed the summary query worked after being given
 expected counts of 1 matching account, 6 original properties found/assigned,
 0 unassigned properties, 4 total bookings/assigned, and 0 unassigned bookings.
 The summary result itself was not supplied as an export or screenshot.
-VG1 remains unchecked pending live API/browser ownership verification with both real accounts.
+VG1 remains unchecked pending live creation ownership assignment, booking mutation permissions, and unrelated-user booking isolation checks.
 
 ### Frontend foundation and data-source verification - 2026-10-08
 
@@ -393,3 +408,102 @@ Be ready to explain authentication versus authorization, session cookies, why AP
 protection alone is insufficient, how direct calls are handled, and why each rule
 belongs in the API, database, or both. Explain code in your own words before
 claiming its criterion complete.
+
+### Live two-account ownership verification - 2026-10-08
+
+Browser observations are user-reported. API evidence consists of the user-supplied
+Bash response status lines and bodies, using separate sequential logins and a
+local cookie jar. No credentials or cookie values are recorded.
+
+Property tested: `dcd91068-9f88-496f-a239-305f54fdc957` (Gothenburg Harbor Loft).
+PATCH requests submitted the existing title, preserving its value.
+
+| Account | Check | Observed result |
+| --- | --- | --- |
+| host@gmail.com | Browser My Properties | User confirmed six assigned properties visible. |
+| test@gmail.com | Browser My Properties / Bookings | No owned properties; five bookings visible. This alone does not prove every booking belongs to the account. |
+| test@gmail.com | PATCH /properties/:id with valid title | 404, Property not found. |
+| test@gmail.com | GET /bookings?property_id=:id | 403, Only the property owner can view all bookings for this property. |
+| host@gmail.com | GET /bookings?property_id=:id | 200, empty array. Authorized access verified; visibility of actual related bookings was not exercised. |
+| host@gmail.com | PATCH /properties/:id with existing title | 200, property object with owner_id eafefb3f-95e9-4cb9-b14f-06a57ecea0c5. |
+
+Initial Bash requests using the Git Bash node wrapper failed with malformed JSON
+(400) after stdin is not a tty. They are not ownership evidence; the valid
+requests above used node.exe. The selected live two-account milestone is
+complete within this documented scope; full VG1 remains unchecked for the
+additional cases described in its criterion row.
+
+### Complete browser authentication flow - 2026-10-08
+
+User-reported browser verification at http://localhost:3001, guided through
+registration, confirmation if required, login, session display, and logout.
+No screenshots, network exports, credentials, or session cookies were supplied.
+
+- User confirmed the initial signed-out navigation and new-account registration worked.
+- User confirmed the instructed confirmation/login sequence worked and navigation
+  displayed the signed-in email and Logout. Email confirmation was conditional in
+  the instructions; no separate confirmation response was supplied in this run.
+- User confirmed Logout removed the email and restored Login/Register.
+- User supplied the signed-out Bookings text: Sign in to view bookings, with a
+  Sign in link to http://localhost:3001/login.
+
+This completes the browser registration/login/logout and session-display milestone,
+G1, and G3 on user-reported evidence. Browser reload persistence was not exercised;
+its milestone and G2 remain unchecked. Earlier evidence-log entries describe
+historical verification status and are superseded by this entry for this flow.
+
+### Browser session persistence - 2026-10-08
+
+At http://localhost:3001, the user confirmed the complete instructed sequence:
+login, verify the account email and Logout in navigation, reload with Ctrl+R,
+verify both remain visible, and open Bookings without a sign-in prompt.
+This is user-reported evidence; no screenshots or network exports were supplied.
+
+The reload-persistence milestone and G2 are complete. Earlier evidence entries
+that list browser reload persistence as pending describe historical status and
+are superseded by this result. This check covers a normal page reload; it does
+not independently verify browser restart persistence or long-term token expiry.
+
+### Direct Supabase unrelated-account booking read - 2026-10-08
+
+The user reported applying database/008_booking_access.sql successfully. A Bash
+script then signed in to Supabase directly with the configured SUPABASE_KEY
+from backend/.env and each account password. No admin key or Hono API was used.
+The supplied output confirms:
+
+- test@gmail.com: HTTP 200 and an accessible owned booking,
+  a8de3760-3cdd-48c3-b5a5-4dbac5bd8b6d (query filtered by the authenticated guest UID).
+- user@gmail.com: HTTP 200 with [] when selecting the same booking by ID.
+- Script result: PASS, unrelated account cannot read the existing booking.
+
+This verifies the direct booking-read restriction for the tested unrelated
+account against a known existing row. Evidence is user-supplied terminal output;
+no passwords, keys, or tokens are recorded. This read test does not verify
+booking mutation permissions or every remaining VG1 case.
+
+### Live property detail and browser login/booking flow - 2026-10-08
+
+User supplied the rendered Gothenburg Harbor Loft details: Gothenburg, Sweden;
+its description; 1200 per night; and capacity of four guests. While signed out,
+the booking section displayed a sign-in prompt and a denied submission returned
+Unauthorized. The user subsequently confirmed authenticated booking submission,
+success feedback, and the new booking in Bookings with the correct property,
+dates, and guest count. This completes the selected milestone on user-reported
+evidence; no network exports or booking ID were supplied for this browser run.
+
+During verification, the unconditional booking sign-in message was changed in
+frontend/src/components/BookingForm.tsx to depend on the current-user check
+returning 401; frontend route type generation, TypeScript, and ESLint passed.
+A separate browser confirmation of that message fix was not explicitly supplied.
+Earlier entries listing this browser flow as unverified describe historical status
+and are superseded by this evidence.
+
+### Booking sign-in return and draft restoration - 2026-10-08
+
+The user confirmed the updated single-button flow works in the browser: Sign in
+when logged out preserves entered booking fields, returns to the same property
+after login, and restores the draft. The signed-in button creates the booking.
+Drafts use per-property sessionStorage in the current tab and clear on successful
+creation. Login return destinations are restricted to same-origin property paths.
+Frontend TypeScript and ESLint checks passed. This confirmation supersedes the
+earlier note that browser confirmation of the sign-in message fix was pending.

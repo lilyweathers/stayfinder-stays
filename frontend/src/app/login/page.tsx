@@ -16,7 +16,15 @@ export default function LoginPage() {
     setError("");
     try {
       await login(String(data.get("email")), String(data.get("password")));
-      router.push("/bookings");
+      const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+      let destination = "/bookings";
+      if (returnTo?.startsWith("/") && !returnTo.startsWith("//")) {
+        const target = new URL(returnTo, window.location.origin);
+        if (target.origin === window.location.origin && target.pathname.startsWith("/properties/")) {
+          destination = target.pathname + target.search;
+        }
+      }
+      router.push(destination);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Could not sign in.");
     } finally {
