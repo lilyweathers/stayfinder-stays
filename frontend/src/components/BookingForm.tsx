@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, createBooking, getCurrentUser } from "@/lib/api";
+import { validateBookingForm } from "@/lib/booking-validation";
 import type { Property } from "@/types/property";
 
 export default function BookingForm({ property }: { property: Property }) {
@@ -12,8 +13,11 @@ export default function BookingForm({ property }: { property: Property }) {
   const draftKey = `stayfinder:booking-draft:${property.property_id}`;
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
+  const [errors, setErrors] = useState<string[]>([]);
   const [needsLogin, setNeedsLogin] = useState(false);
   const [created, setCreated] = useState(false);
+  const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm",
+    year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 
   useEffect(() => {
     let active = true;
@@ -66,20 +70,22 @@ export default function BookingForm({ property }: { property: Property }) {
     }
     setNeedsLogin(false);
     setCreated(false);
-    if (checkOut <= checkIn) {
-      setMessage("Check-out must be after check-in.");
-      return;
-    }
+    setMessage("");
+    const values = {
+      guest_name: String(data.get("guest_name") || "").trim(),
+      guest_email: String(data.get("guest_email") || "").trim(),
+      check_in: checkIn, check_out: checkOut,
+      guests: Number(data.get("guests")),
+    };
+    const validationErrors = validateBookingForm(values, property.max_guests);
+    setErrors(validationErrors);
+    if (validationErrors.length) return;
     setPending(true);
     setMessage("");
     try {
       await createBooking({
         property_id: property.property_id,
-        guest_name: String(data.get("guest_name")),
-        guest_email: String(data.get("guest_email")),
-        check_in: checkIn,
-        check_out: checkOut,
-        guests: Number(data.get("guests")),
+        ...values,
       });
       setMessage("Your booking was created.");
       setCreated(true);
@@ -91,7 +97,7 @@ export default function BookingForm({ property }: { property: Property }) {
         signIn(form);
         return;
       }
-      setMessage(error instanceof Error ? error.message : "Could not create booking.");
+      setErrors([error instanceof Error ? error.message : "Could not create booking."]);
     } finally {
       setPending(false);
     }
@@ -101,18 +107,21 @@ export default function BookingForm({ property }: { property: Property }) {
     <section>
       <h2>Book this stay</h2>
       {needsLogin && <p>Sign in before submitting a booking.</p>}
-      <form ref={formRef} onSubmit={submit}>
+      <form ref={formRef} onSubmit={submit} noValidate>
         <label>Name<input name="guest_name" required autoComplete="name" /></label>
         <label>Email<input name="guest_email" type="email" required autoComplete="email" /></label>
-        <label>Check-in<input name="check_in" type="date" required /></label>
-        <label>Check-out<input name="check_out" type="date" required /></label>
-        <label>Guests<input name="guests" type="number" min={1} max={property.max_guests} defaultValue={1} required /></label>
+        <label>Check-in<input name="check_in" type="date" min={today} required /></label>
+        <label>Check-out<input name="check_out" type="date" min={today} required /></label>
+        <label>Guests<input name="guests" type="number" min={1} max={property.max_guests} step={1} defaultValue={1} required /></label>
         <button
           type={needsLogin ? "button" : "submit"}
           onClick={needsLogin ? () => signIn(formRef.current) : undefined}
           disabled={pending}
         >{pending ? "Booking…" : needsLogin ? "Sign in" : "Create booking"}</button>
       </form>
+      {errors.length > 0 && <div role="alert"><p>Please correct the booking details:</p>
+        <ul>{errors.map(error => <li key={error}>{error}</li>)}</ul>
+      </div>}
       <p role="status">{message}</p>
       {created && <Link href="/bookings">View your bookings</Link>}
     </section>

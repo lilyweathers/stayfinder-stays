@@ -1,0 +1,28 @@
+# G10 invalid booking requests: log in first with your REST client cookie jar.
+# All requests below must return 400 and create no records.
+@base_url = http://localhost:3000
+@property_id = dcd91068-9f88-496f-a239-305f54fdc957
+
+### Impossible calendar date
+POST {{base_url}}/bookings
+Content-Type: application/json
+
+{"property_id":"{{property_id}}","guest_name":"Validation Guest","guest_email":"guest@example.com","check_in":"2028-02-30","check_out":"2028-03-02","guests":1}
+
+### Checkout before check-in
+POST {{base_url}}/bookings
+Content-Type: application/json
+
+{"property_id":"{{property_id}}","guest_name":"Validation Guest","guest_email":"guest@example.com","check_in":"2028-03-02","check_out":"2028-03-01","guests":1}
+
+### Blank name, invalid email, fractional guests
+POST {{base_url}}/bookings
+Content-Type: application/json
+
+{"property_id":"{{property_id}}","guest_name":"   ","guest_email":"invalid","check_in":"2028-03-01","check_out":"2028-03-02","guests":1.5}
+
+### Past check-in: 400
+POST {{base_url}}/bookings
+Content-Type: application/json
+
+{"property_id":"{{property_id}}","guest_name":"Validation Guest","guest_email":"guest@example.com","check_in":"2000-01-01","check_out":"2000-01-02","guests":1}

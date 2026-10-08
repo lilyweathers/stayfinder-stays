@@ -185,8 +185,8 @@ does not prove that PostgreSQL permissions or constraints work.
 | [x] | G6 | Property writes require authentication in both API and database. | API guards and hosted basic RLS policies implemented. Live authenticated CRUD, anonymous API denial, and direct Supabase write restrictions confirmed by the user. Ownership is tracked under VG1. |
 | [x] | G7 | An authenticated user can create a property using a frontend form. | Create new property form added to My Properties with validation, pending/error/success feedback, and POST /properties. Backend assigns the signed-in user's owner_id. User confirmed creating a temporary account and property during the live account-deletion check on 2026-10-08. |
 | [x] | G8 | Sort by ascending or descending price in the backend. | GET /properties accepts sort=asc or sort=desc, validated and applied through Supabase database ordering by price_per_night with property_id as a stable tie-breaker. Live API checks passed in both directions with and without filters on 2026-10-08. All 26 backend tests and frontend TypeScript/ESLint checks pass; property-list sort dropdown implemented. |
-| [ ] | G9 | Authenticated users can book from details; visitors are prompted to log in. | BookingForm implemented on the detail page with a sign-in prompt on 401. Backend booking creation verified earlier; complete browser flow remains unverified. |
-| [ ] | G10 | Reject invalid bookings and show understandable form errors. | Backend Zod validates basic fields. Frontend validates date order and displays request errors; backend real calendar-date/date-order checks and detailed validation messages remain. |
+| [x] | G9 | Authenticated users can book from details; visitors are prompted to log in. | User confirmed the logged-out detail-page sign-in prompt, sign-in return with restored booking fields, and successful authenticated booking with success feedback and correct property/dates/guest count in Bookings on 2026-10-08. Backend booking creation also verified earlier. |
+| [x] | G10 | Reject invalid bookings and show understandable form errors. | API create/update now validate real YYYY-MM-DD dates, checkout after check-in, trimmed required name/property, valid email, and positive integer guests, returning 400 with field paths and messages. Create/edit forms show understandable errors and check displayed capacity. Past check-in is rejected in API/form using Europe/Stockholm, with same-day allowed. All 29 backend tests, TypeScript and ESLint pass. User confirmed invalid-form errors work and the browser date picker disables past dates on 2026-10-08. |
 | [ ] | G11 | Show nights and total price before submission. | Not implemented: no frontend nights/price preview. |
 | [ ] | G12 | Authenticated users can view, change, and delete bookings for a property. | My Properties lists owned properties and links to management pages with related bookings, property/booking editing, and confirm/cancel actions. Property editing uses PATCH; booking editing preserves status/identity. Frontend deletion and live browser verification remain. |
 | [ ] | G13 | Loading, fetch-error, and missing-property views exist. | Bookings loading/error states and property fetch-error messages implemented; detail route uses notFound() on 404. Property loading UI and live failure-state verification remain. |
@@ -554,3 +554,50 @@ database-order forwarding, combined filters, default order, and invalid-sort
 denial. Frontend route type generation, TypeScript, and ESLint passed. G8 is
 complete based on backend implementation and live API evidence. The user also
 confirmed both browser sort choices work on 2026-10-08.
+
+### Booking input validation implementation (G10) - 2026-10-08
+
+backend/src/validators/bookingValidator.ts validates actual calendar dates by
+round-tripping UTC date strings and requires checkout strictly after check-in.
+Leap days are accepted only in leap years; year 0000, invalid months/days,
+timestamps, and non-YYYY-MM-DD formats are rejected. Name/property fields are
+trimmed and required; email is trimmed/validated; guests must be a positive safe
+integer. POST and PUT share the schema and return 400 with field paths/messages
+before database writes. backend/tests/booking-validation.test.ts covers 17
+invalid cases on both routes, and a valid leap-day booking.
+
+frontend/src/lib/booking-validation.ts is shared by create/edit forms and
+provides explicit name, email, date, order, whole-number, and displayed-capacity
+errors. Inputs remain filled after failure. Backend validation messages already
+flow through the API helper. All 28 backend tests passed; frontend validation
+checks, route generation, TypeScript, and ESLint passed. Browser invalid-input
+verification remains pending; G10 is unchecked until confirmed.
+
+This work does not complete VG3: displayed-capacity checks are frontend only;
+trusted API/database capacity enforcement remains to implement under VG3.
+Past-date restrictions remain tracked under VG5.
+
+### G10 past-date follow-up - 2026-10-08
+
+The user confirmed the date-order, missing/invalid name/email, and displayed guest
+capacity browser checks worked, but reported that past dates were still bookable.
+API create/update and shared frontend form validation now reject check-in before
+the current Europe/Stockholm calendar date; same-day check-in is allowed. Create
+form date inputs also expose today as their minimum. All 29 backend tests and
+frontend TypeScript/ESLint checks passed. The additional invalid-request case
+verifies past dates return 400 before database writes on both POST and PUT.
+The user subsequently confirmed the browser date picker disables past dates;
+G10 is complete with the previously confirmed invalid-form checks and passing
+API validation tests. A manually entered past-date browser error was not
+exercised because the picker prevented selection.
+Direct database time-rule enforcement remains unfinished under VG5.
+
+### G10 completed browser verification - 2026-10-08
+
+The user confirmed past dates are greyed out and cannot be selected in the
+browser booking form. Earlier browser confirmation covered invalid date order,
+name/email, and displayed-capacity errors. Combined with the 29 passing backend
+tests (including manually submitted past dates rejected before writes), this
+completes G10. Historical pending-verification notes in this log are superseded
+by this entry. VG3 database capacity and VG5 direct database time rules remain
+separate unfinished criteria.

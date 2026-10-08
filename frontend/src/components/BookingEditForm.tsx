@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { updateBooking } from "@/lib/api";
+import { validateBookingForm } from "@/lib/booking-validation";
 import type { Booking } from "@/types/booking";
 
 export default function BookingEditForm({ booking, maxGuests, onSaved }: {
@@ -21,15 +22,18 @@ export default function BookingEditForm({ booking, maxGuests, onSaved }: {
     const checkOut = String(data.get("check_out"));
     setError("");
     setNotice("");
-    if (checkOut <= checkIn) { setError("Check-out must be after check-in."); return; }
+    const values = {
+      guest_name: String(data.get("guest_name") || "").trim(),
+      guest_email: String(data.get("guest_email") || "").trim(),
+      check_in: checkIn, check_out: checkOut, guests: Number(data.get("guests")),
+    };
+    const validationErrors = validateBookingForm(values, maxGuests);
+    if (validationErrors.length) { setError(validationErrors.join(" ")); return; }
     setPending(true);
     try {
       const updated = await updateBooking(booking.booking_id, {
         property_id: booking.property_id,
-        guest_name: String(data.get("guest_name")).trim(),
-        guest_email: String(data.get("guest_email")).trim(),
-        check_in: checkIn, check_out: checkOut,
-        guests: Number(data.get("guests")), status: booking.status,
+        ...values, status: booking.status,
       });
       onSaved(updated);
       setEditing(false);
@@ -38,7 +42,7 @@ export default function BookingEditForm({ booking, maxGuests, onSaved }: {
     finally { setPending(false); }
   }
   return <section className="booking-actions">
-    {editing ? <form onSubmit={submit}>
+    {editing ? <form onSubmit={submit} noValidate>
       <label>Guest name<input name="guest_name" required defaultValue={booking.guest_name} /></label>
       <label>Guest email<input name="guest_email" type="email" required defaultValue={booking.guest_email} /></label>
       <label>Check-in<input name="check_in" type="date" min={today} required defaultValue={booking.check_in} /></label>
