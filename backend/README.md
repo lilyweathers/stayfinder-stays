@@ -1,8 +1,8 @@
 # StayFinder API
 
 A REST API built with Hono, Node.js, TypeScript, and Zod. Active property and
-booking routes use Supabase/PostgreSQL. The JSON files and JSON database helper
-are legacy assets; property tests still use the JSON property data as fixtures.
+booking routes use Supabase/PostgreSQL exclusively. No local JSON database or
+demo-data fallback is used. API tests define their own isolated response data.
 
 ## Requirements and setup
 

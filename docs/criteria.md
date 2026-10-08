@@ -10,7 +10,7 @@ Mark an item complete only after implementing it, verifying the whole criterion,
 and recording the code location and test evidence. A passing mocked API test
 does not prove that PostgreSQL permissions or constraints work.
 
-## Current progress (2026-10-06)
+## Current progress (2026-10-08)
 
 - Backend: request-specific Supabase SSR clients, cookie sessions and token refresh,
   register/login/me/logout, credentialed CORS, and protected property writes and bookings.
@@ -21,7 +21,10 @@ does not prove that PostgreSQL permissions or constraints work.
   email confirmation was also verified in the Supabase dashboard.
 - Thirteen mocked API tests cover CRUD, auth cookies, anonymous denial, refresh,
   token forwarding to database requests, validation, and CORS.
-- G1/G2 frontend flows and browser persistence remain unfinished. The user confirmed
+- Frontend now includes public property list/detail pages, login, a booking form,
+  a bookings list, shared API helpers, and request/response types. Registration,
+  logout, session display, and browser persistence verification remain unfinished.
+- The user confirmed
   the live Postman me/logout sequence passed and reports successful property and
   booking CRUD. Live anonymous API denial and public property reads are also
   user-confirmed. The user also reports all 43 direct Supabase RLS assertions passed.
@@ -72,32 +75,46 @@ does not prove that PostgreSQL permissions or constraints work.
 ### Checks and supporting files
 
 - [x] Backend TypeScript check passes.
-- [x] All 13 backend automated tests pass (2026-10-06; Supabase responses mocked).
+- [x] All 13 backend automated tests pass (2026-10-08; Supabase responses mocked).
+- [x] Frontend TypeScript and ESLint checks pass (2026-10-08).
+- [x] Remove legacy property/booking JSON data and the unused JSON database helper;
+  isolate response fixtures inside backend/tests/api.test.ts.
 - [x] Add auth REST request examples in requests/auth.http.
 - [x] Document dashboard, cookie, email, and Postman setup in docs/auth-setup.md.
 - [x] Commit and push the auth foundation to the repository (commit 8b6a432).
 - [ ] Complete submission requests covering all selected criteria, including VG denials.
 
+### Frontend foundation (2026-10-08)
+
+- [x] Add public property list and dynamic detail routes using the backend API.
+- [x] Add reusable PropertyCard, PropertyList, and BookingForm components.
+- [x] Add login form and credentialed API requests for backend session cookies.
+- [x] Add bookings list with loading, error, empty, and sign-in states.
+- [x] Add property, booking, and API response types and shared API helper.
+- [x] Verify live backend properties match a direct read-only Supabase query:
+  both returned the same six records; the user's frontend screenshots show them.
+- [ ] Verify live property detail rendering and the complete browser login/booking flow.
+
 ## G checklist
 
 | Complete | Criterion | Required result | Current progress and remaining verification |
 | --- | --- | --- | --- |
-| [ ] | G1 | Visitors can register, log in, and log out. | Backend endpoints implemented; registration, confirmation, and login verified live. Live me/logout sequence confirmed by the user; logout also covered by mocked tests. Frontend forms remain. |
+| [ ] | G1 | Visitors can register, log in, and log out. | Backend endpoints verified as recorded below. Frontend login form implemented in frontend/src/app/login/page.tsx; registration/logout controls and live browser verification remain. |
 | [ ] | G2 | Login survives reload; the app can identify the logged-in user. | Cookie sessions, refresh, and me implemented and covered by mocked tests. Live me/logout sequence confirmed by the user. Frontend identity display and browser reload checks remain. |
-| [ ] | G3 | Navigation changes for authenticated and anonymous visitors. | Not implemented: frontend still has a placeholder homepage. |
-| [ ] | G4 | Everyone can view the property list and individual details. | Public list/detail API endpoints exist; anonymous live reads confirmed by the user. Frontend list/detail pages remain. |
+| [ ] | G3 | Navigation changes for authenticated and anonymous visitors. | Shared navigation implemented, but links do not yet change with authentication state. |
+| [ ] | G4 | Everyone can view the property list and individual details. | Public API and frontend list/detail routes implemented. Live list matches Supabase and is shown in user screenshots; live detail-page verification remains. |
 | [ ] | G5 | Filter by location, maximum price, and guest count. | Not implemented: property list does not apply location, price, or guest filters. |
 | [x] | G6 | Property writes require authentication in both API and database. | API guards and hosted basic RLS policies implemented. Live authenticated CRUD, anonymous API denial, and direct Supabase write restrictions confirmed by the user. Ownership is tracked under VG1. |
 | [ ] | G7 | An authenticated user can create a property using a frontend form. | Not implemented: no frontend property form. |
 | [ ] | G8 | Sort by ascending or descending price in the backend. | Not implemented: property list has no backend price sorting. |
-| [ ] | G9 | Authenticated users can book from details; visitors are prompted to log in. | Booking POST requires login; live booking creation confirmed by the user. Frontend booking form, detail flow, and login prompt remain. |
-| [ ] | G10 | Reject invalid bookings and show understandable form errors. | Zod validates email, positive guests, and required fields. Real calendar-date and date-order checks and frontend error display remain. |
+| [ ] | G9 | Authenticated users can book from details; visitors are prompted to log in. | BookingForm implemented on the detail page with a sign-in prompt on 401. Backend booking creation verified earlier; complete browser flow remains unverified. |
+| [ ] | G10 | Reject invalid bookings and show understandable form errors. | Backend Zod validates basic fields. Frontend validates date order and displays request errors; backend real calendar-date/date-order checks and detailed validation messages remain. |
 | [ ] | G11 | Show nights and total price before submission. | Not implemented: no frontend nights/price preview. |
-| [ ] | G12 | Authenticated users can view, change, and delete bookings for a property. | Protected booking CRUD implemented, covered by mocked tests, and confirmed live by the user. Frontend management, property-specific filtering, and selected VG restrictions remain. |
-| [ ] | G13 | Loading, fetch-error, and missing-property views exist. | API returns 404 for missing properties. Frontend loading, error, and missing-property pages remain. |
+| [ ] | G12 | Authenticated users can view, change, and delete bookings for a property. | Protected API CRUD and frontend bookings list implemented. Frontend update/delete controls, property-specific filtering, live browser verification, and selected VG restrictions remain. |
+| [ ] | G13 | Loading, fetch-error, and missing-property views exist. | Bookings loading/error states and property fetch-error messages implemented; detail route uses notFound() on 404. Property loading UI and live failure-state verification remain. |
 | [ ] | G14 | API returns appropriate status codes. | Automated tests cover 200/201/400/401/403/404/409/500 cases. Complete live status-code verification and invalid-date coverage remain. |
 | [x] | G15 | Database permissions protect tables independently of the API. | RLS enabled and eight basic policies applied and verified in the dashboard. All 43 direct Supabase assertions passed according to the user's Postman report, covering anonymous restrictions and authenticated CRUD. |
-| [ ] | G16 | Backend and frontend data are typed. | Backend auth context and domain interfaces exist; backend typecheck passes. Database response typing and frontend request/response types remain. |
+| [ ] | G16 | Backend and frontend data are typed. | Backend context/domain interfaces and frontend property/booking/API request-response types implemented; both TypeScript checks pass. Database response typing remains. |
 
 ## VG checklist: all seven selected
 
@@ -150,6 +167,24 @@ These are proposed conventions, not extra requirements from the assignment.
 8. Verify all rules through API calls, direct database requests, and frontend flows.
 
 ## Evidence log
+
+### Frontend foundation and data-source verification - 2026-10-08
+
+Code: frontend/src/app/properties/page.tsx, frontend/src/app/properties/[id]/page.tsx,
+frontend/src/app/login/page.tsx, frontend/src/app/bookings/page.tsx,
+frontend/src/components/, frontend/src/lib/api.ts, and frontend/src/types/.
+
+Frontend `npm run typecheck` and `npm run lint` passed. Backend `npm test`
+passed all 13 tests after legacy JSON removal; `npm run typecheck` also passed.
+A read-only comparison of GET /properties and Supabase /rest/v1/properties
+returned HTTP 200, six records each, and identical rows. User screenshots
+confirm frontend list rendering. Supabase records were retained at the user's request.
+Test fixtures remain isolated in the test suite and are not production fallbacks.
+
+Live detail, browser authentication/persistence, and booking submission have not
+been verified. A repeat live check before commit could not run because the local
+servers were stopped (connection refused). These milestones do not complete
+the corresponding full criteria.
 
 Use test accounts: property owner, guest A, guest B, and anonymous visitor.
 Keep real credentials and access tokens out of committed request files.

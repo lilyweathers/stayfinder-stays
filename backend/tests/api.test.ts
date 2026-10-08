@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { test } from "node:test";
 process.env.SUPABASE_URL = "https://test.supabase.co";
 process.env.SUPABASE_KEY = "test-key";
-
-const sourceDataDirectory = path.resolve(process.cwd(), "src", "data");
 
 const { default: app } = await import("../src/app.js");
 const user = { id: "test-user", email: "guest@example.com", aud: "authenticated" };
@@ -45,9 +41,15 @@ test("root identifies the API", async () => {
 });
 
 test("properties can be listed and fetched by id", async (t) => {
-  const fixtures = JSON.parse(await fs.readFile(
-    path.join(sourceDataDirectory, "properties.json"), "utf8",
-  )) as Property[];
+  // Test-only response data; production properties come exclusively from Supabase.
+  const fixtures: Property[] = [{
+    property_id: "property_1001",
+    title: "Test property",
+    description: "Property used only by the API test",
+    location: "Test location",
+    price_per_night: 100,
+    max_guests: 2,
+  }];
   t.mock.method(globalThis, "fetch", async (input: string | URL | Request, init: RequestInit) => {
     const auth = authResponse(input);
     if (auth) return auth;
