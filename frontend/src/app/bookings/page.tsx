@@ -62,18 +62,33 @@ export default function BookingsPage() {
 
   return (
     <main>
-      <h1>Bookings</h1>
-      <p>View bookings you have made. Manage guest bookings for your properties under My Properties.</p>
+      <div className="my-properties-heading">
+        <div><h1>Bookings</h1><p>Your upcoming stays and booking history.</p><p>Hosting guests? Manage their bookings under <Link href="/my-properties">My Properties</Link>.</p></div>
+        {!loading && !needsLogin && !error && <button type="button" onClick={retry}>Refresh bookings</button>}
+      </div>
       {notice && <p role="status">{notice}</p>}
       {loading && <p role="status">Loading bookings...</p>}
       {error && <p role="alert">{error}</p>}
-      {needsLogin ? <Link href="/login">Sign in</Link> : !loading && (
-        <button type="button" onClick={retry}>{error ? "Try again" : "Refresh bookings"}</button>
-      )}
+      {needsLogin ? <Link href="/login">Sign in</Link> : !loading && error && <button type="button" onClick={retry}>Try again</button>}
       {!loading && !error && <>
         {warning && <p role="status">{warning}</p>}
         {bookings.length === 0 ? (
-          <p>No bookings to show yet. <Link href="/properties">Browse properties</Link></p>
+          <section className="hosting-empty" aria-labelledby="empty-bookings-heading">
+            <svg className="hosting-illustration" viewBox="0 0 200 160" fill="none" aria-hidden="true">
+              <circle cx="100" cy="80" r="72" fill="#e6eee8" />
+              <path d="M32 137h136" stroke="#9ab5a8" strokeWidth="3" strokeLinecap="round" />
+              <path d="M81 55V43a7 7 0 0 1 7-7h24a7 7 0 0 1 7 7v12" stroke="#35605b" strokeWidth="4" />
+              <rect x="57" y="55" width="86" height="76" rx="10" fill="#fffdf7" stroke="#35605b" strokeWidth="3" />
+              <path d="M78 57v72m44-72v72" stroke="#d7a36c" strokeWidth="5" />
+              <path d="M69 132v5m62-5v5" stroke="#35605b" strokeWidth="5" strokeLinecap="round" />
+              <rect x="90" y="82" width="21" height="17" rx="3" fill="#d6e9ed" stroke="#35605b" strokeWidth="2" />
+              <path d="m154 38 3 8 8 3-8 3-3 8-3-8-8-3 8-3Z" fill="#d7a36c" />
+            </svg>
+            <p className="home-eyebrow">Something to look forward to</p>
+            <h2 id="empty-bookings-heading">Your next adventure starts here</h2>
+            <p>No stays booked yet. Explore city studios, peaceful cabins, and lakeside escapes. Once you book, all your stay details will be right here.</p>
+            <Link className="empty-state-link" href="/properties">Find your next stay <span aria-hidden="true">→</span></Link>
+          </section>
         ) : <>
           <div className="booking-filters">
             <label>Property

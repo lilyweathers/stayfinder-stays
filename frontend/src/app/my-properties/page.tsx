@@ -38,8 +38,10 @@ export default function MyPropertiesPage() {
     return () => { active = false; };
   }, [attempt]);
   return <main>
-    <h1>My Properties</h1>
-    <p>Manage your properties and their bookings.</p>
+    <div className="my-properties-heading">
+      <div><h1>My Properties</h1><p>Manage your properties and their bookings.</p></div>
+      {!loading && !error && !creating && properties.length > 0 && <button type="button" onClick={() => { setCreating(true); setNotice(""); }}>Add property</button>}
+    </div>
     {notice && <p role="status">{notice}</p>}
     {loading && <p role="status">Loading your properties…</p>}
     {error && <p role="alert">{error}</p>}
@@ -47,12 +49,27 @@ export default function MyPropertiesPage() {
     {error && !needsLogin && <button type="button" onClick={() => {
       setLoading(true); setError(""); setProperties([]); setAttempt(value => value + 1);
     }}>Try again</button>}
-    {!loading && !error && (creating ? <CreatePropertyForm onClose={() => setCreating(false)} onCreated={property => {
+    {!loading && !error && creating && <CreatePropertyForm onClose={() => setCreating(false)} onCreated={property => {
       setProperties(current => [property, ...current]);
       setCreating(false);
       setNotice(`Property "${property.title}" created successfully.`);
-    }} /> : <p><button type="button" onClick={() => { setCreating(true); setNotice(""); }}>Create new property</button></p>)}
-    {!loading && !error && properties.length === 0 && <p>You do not own any properties yet.</p>}
+    }} />}
+    {!loading && !error && !creating && properties.length === 0 && <section className="hosting-empty" aria-labelledby="hosting-heading">
+      <svg className="hosting-illustration" viewBox="0 0 200 160" fill="none" aria-hidden="true">
+        <circle cx="100" cy="80" r="72" fill="#e6eee8" />
+        <path d="M30 136h140" stroke="#9ab5a8" strokeWidth="3" strokeLinecap="round" />
+        <path d="M58 77v59h84V77" fill="#fffdf7" stroke="#35605b" strokeWidth="3" strokeLinejoin="round" />
+        <path d="m45 82 55-45 55 45" stroke="#35605b" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M89 136v-34h22v34" fill="#d7a36c" stroke="#35605b" strokeWidth="3" />
+        <rect x="69" y="85" width="16" height="17" rx="2" fill="#d6e9ed" stroke="#35605b" strokeWidth="2" />
+        <rect x="116" y="85" width="16" height="17" rx="2" fill="#d6e9ed" stroke="#35605b" strokeWidth="2" />
+        <path d="M36 134v-23m0 10-9-9m9 5 9-10M164 134v-23m0 10-9-9m9 5 9-10" stroke="#6c9277" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+      <p className="home-eyebrow">Make room for new adventures</p>
+      <h2 id="hosting-heading">Your hosting journey starts here</h2>
+      <p>Have a place you’d like to share? Add your first property, then manage its details and guest bookings here.</p>
+      <button type="button" onClick={() => { setCreating(true); setNotice(""); }}>Add your first property <span aria-hidden="true">→</span></button>
+    </section>}
     {!loading && !error && properties.map(property => <article className="card account-property-card" key={property.property_id}>
       <Link href={`/my-properties/${encodeURIComponent(property.property_id)}`}><PropertyImage src={property.image_url} title={property.title} /></Link>
       <h2>{property.title}</h2>
