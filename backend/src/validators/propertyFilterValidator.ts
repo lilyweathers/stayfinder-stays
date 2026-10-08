@@ -5,6 +5,7 @@ const optionalFilter = (value: unknown) =>
   typeof value === "string" && value.trim() === "" ? undefined : value;
 
 const filterSchema = z.object({
+  sort: z.preprocess(optionalFilter, z.enum(["asc", "desc"], { error: "Price sort must be asc or desc" }).optional()),
   location: z.preprocess(optionalFilter, z.string().trim().max(100, "Location must be at most 100 characters").optional()),
   max_price: z.preprocess(optionalFilter, z.string().trim()
     .regex(/^(?:\d+(?:\.\d*)?|\.\d+)$/, "Maximum price must be a non-negative number")

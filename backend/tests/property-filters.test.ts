@@ -53,3 +53,42 @@ test("invalid price and guest filters are rejected before querying Supabase", as
     assert.ok(body.errors.length > 0);
   }
 });
+
+test("price sorting is performed by the database and preserves combined filters", async (t) => {
+  let direction = "asc";
+  t.mock.method(globalThis, "fetch", async (input: string | URL | Request) => {
+    const url = new URL(String(input));
+    assert.equal(url.searchParams.get("order"), "price_per_night." + direction + ",property_id.asc");
+    assert.equal(url.searchParams.get("location"), "ilike.%Sweden%");
+    assert.equal(url.searchParams.get("price_per_night"), "lte.1200");
+    assert.equal(url.searchParams.get("max_guests"), "gte.2");
+    assert.equal(url.searchParams.get("deleted_at"), "is.null");
+    const rows = direction === "asc"
+      ? [{ price_per_night: 850 }, { price_per_night: 1200 }]
+      : [{ price_per_night: 1200 }, { price_per_night: 850 }];
+    return Response.json(rows);
+  });
+  for (direction of ["asc", "desc"]) {
+    const response = await app.request("/properties?location=Sweden&max_price=1200&guests=2&sort=" + direction);
+    assert.equal(response.status, 200);
+    const rows = await response.json() as { price_per_night: number }[];
+    assert.deepEqual(rows.map(row => row.price_per_night), direction === "asc" ? [850, 1200] : [1200, 850]);
+  }
+});
+
+test("blank sorting keeps default order and invalid sorting returns 400", async (t) => {
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async (input: string | URL | Request) => {
+    calls++;
+    assert.equal(new URL(String(input)).searchParams.get("order"), null);
+    return Response.json([]);
+  });
+  for (const query of ["", "?sort=", "?sort=%20"]) {
+    assert.equal((await app.request("/properties" + query)).status, 200);
+  }
+  assert.equal(calls, 3);
+  for (const sort of ["invalid", "ASC", "price_per_night.desc"]) {
+    assert.equal((await app.request("/properties?sort=" + sort)).status, 400);
+  }
+  assert.equal(calls, 3, "Invalid sorting must not reach the database");
+});

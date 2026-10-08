@@ -184,7 +184,7 @@ does not prove that PostgreSQL permissions or constraints work.
 | [x] | G5 | Filter by location, maximum price, and guest count. | Implemented GET /properties location/max_price/guests filters with query validation and database filtering; frontend GET form retains URL values and supports clearing/empty results. All 24 backend tests and frontend type/lint checks pass. Live individual/combined API filters and server-rendered controls verified on 2026-10-08; user confirmed browser Apply filters and Clear filters work on 2026-10-08. |
 | [x] | G6 | Property writes require authentication in both API and database. | API guards and hosted basic RLS policies implemented. Live authenticated CRUD, anonymous API denial, and direct Supabase write restrictions confirmed by the user. Ownership is tracked under VG1. |
 | [x] | G7 | An authenticated user can create a property using a frontend form. | Create new property form added to My Properties with validation, pending/error/success feedback, and POST /properties. Backend assigns the signed-in user's owner_id. User confirmed creating a temporary account and property during the live account-deletion check on 2026-10-08. |
-| [ ] | G8 | Sort by ascending or descending price in the backend. | Not implemented: property list has no backend price sorting. |
+| [x] | G8 | Sort by ascending or descending price in the backend. | GET /properties accepts sort=asc or sort=desc, validated and applied through Supabase database ordering by price_per_night with property_id as a stable tie-breaker. Live API checks passed in both directions with and without filters on 2026-10-08. All 26 backend tests and frontend TypeScript/ESLint checks pass; property-list sort dropdown implemented. |
 | [ ] | G9 | Authenticated users can book from details; visitors are prompted to log in. | BookingForm implemented on the detail page with a sign-in prompt on 401. Backend booking creation verified earlier; complete browser flow remains unverified. |
 | [ ] | G10 | Reject invalid bookings and show understandable form errors. | Backend Zod validates basic fields. Frontend validates date order and displays request errors; backend real calendar-date/date-order checks and detailed validation messages remain. |
 | [ ] | G11 | Show nights and total price before submission. | Not implemented: no frontend nights/price preview. |
@@ -535,3 +535,22 @@ The user confirmed the instructed browser checks worked: applying location
 Gothenburg, maximum nightly price 1200, and four guests shows Gothenburg Harbor
 Loft; Clear filters restores all six properties. This is user-reported evidence
 and completes G5 alongside the previously recorded live API and automated checks.
+
+### Backend price sorting (G8) - 2026-10-08
+
+GET /properties?sort=asc or sort=desc sorts in PostgreSQL through the Supabase
+query, not in browser JavaScript. Equal prices use property_id ascending for
+a stable order. Omitted/blank sort retains the existing default order, while
+unsupported sort values return 400 before a database request. Existing filters
+combine with sorting. Frontend controls submit the sort value alongside filters
+and retain it in the URL. No database migration is required.
+
+Independent live API checks returned prices 850, 900, 950, 1100, 1200, 1800
+ascending and the reverse descending. With location=Sweden, max_price=1200,
+and guests=2, both directions returned the five matching properties in the
+expected order. Invalid sort returned 400. The frontend sort URL rendered 200
+with the dropdown and both choices. All 26 backend tests passed, including
+database-order forwarding, combined filters, default order, and invalid-sort
+denial. Frontend route type generation, TypeScript, and ESLint passed. G8 is
+complete based on backend implementation and live API evidence. The user also
+confirmed both browser sort choices work on 2026-10-08.

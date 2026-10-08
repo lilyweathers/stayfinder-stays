@@ -13,8 +13,9 @@ export default async function PropertiesPage({ searchParams }: {
   };
   const filters: PropertyFilters = {
     location: value("location"), max_price: value("max_price"), guests: value("guests"),
+    sort: value("sort"),
   };
-  const filtered = Object.values(filters).some(value => value.trim());
+  const filtered = [filters.location, filters.max_price, filters.guests].some(value => value?.trim());
   let properties: Property[] = [];
   let error = "";
   try {
@@ -33,6 +34,11 @@ export default async function PropertiesPage({ searchParams }: {
         step="any" placeholder="Any price" defaultValue={filters.max_price} /></label>
       <label>Guests<input name="guests" type="number" min={1} step={1}
         placeholder="Any guest count" defaultValue={filters.guests} /></label>
+      <label>Sort by price<select name="sort" defaultValue={filters.sort}>
+        <option value="">Default order</option>
+        <option value="asc">Lowest price first</option>
+        <option value="desc">Highest price first</option>
+      </select></label>
       <button type="submit">Apply filters</button>
       <Link href="/properties">Clear filters</Link>
     </form>

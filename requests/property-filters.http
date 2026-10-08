@@ -21,3 +21,12 @@ GET {{base_url}}/properties?max_price=-1
 
 ### Invalid guest count: 400
 GET {{base_url}}/properties?guests=1.5
+
+### G8: ascending price
+GET {{base_url}}/properties?sort=asc
+
+### G8: descending price with combined filters
+GET {{base_url}}/properties?location=Sweden&max_price=1200&guests=2&sort=desc
+
+### Invalid sort: 400
+GET {{base_url}}/properties?sort=invalid

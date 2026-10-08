@@ -11,7 +11,7 @@ const propertiesApp = new Hono({ strict: false });
 propertiesApp.get("/", propertyFilterValidator, async (c) => {
   const supabase = c.get("supabase");
   try {
-    const { location, max_price, guests } = c.req.valid("query");
+    const { location, max_price, guests, sort } = c.req.valid("query");
     let query = supabase.from("properties").select("*").is("deleted_at", null);
     if (location) {
       // Treat SQL wildcard characters in the search text literally.
@@ -20,6 +20,10 @@ propertiesApp.get("/", propertyFilterValidator, async (c) => {
     }
     if (max_price !== undefined) query = query.lte("price_per_night", max_price);
     if (guests !== undefined) query = query.gte("max_guests", guests);
+    if (sort) {
+      query = query.order("price_per_night", { ascending: sort === "asc" })
+        .order("property_id", { ascending: true });
+    }
     const { data, error } = await query;
     if (error) throw error;
     return c.json(data);
