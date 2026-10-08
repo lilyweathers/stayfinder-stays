@@ -1,4 +1,5 @@
 export interface Property {
+  owner_id: string | null;
   property_id: string;
   title: string;
   description: string;

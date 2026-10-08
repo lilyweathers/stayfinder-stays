@@ -127,3 +127,15 @@ See [the three-lecture setup guide](../docs/auth-setup.md) and
 [auth REST requests](../requests/auth.http). Public property reads stay open;
 property POST/PUT/PATCH/DELETE and all booking routes require authentication.
 The SQL policies must be applied in Supabase separately.
+
+## Ownership (VG1)
+
+Apply `database/002_ownership.sql` before using the updated backend. See
+[database setup](../database/README.md) for the existing-record assignment and
+rollback-only verification script. Properties are publicly readable, but only
+their owner may change/delete them. Booking rows are visible and mutable only
+to their guest or the property's owner, enforced by PostgreSQL RLS using each
+request's verified user token. The API derives owner_id/guest_id and rejects
+ownership fields in request bodies. Other users receive 404 for hidden rows;
+database ownership violations return 403. Identity/ownership and a booking's
+property cannot be transferred through regular database roles.

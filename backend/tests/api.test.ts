@@ -43,6 +43,7 @@ test("root identifies the API", async () => {
 test("properties can be listed and fetched by id", async (t) => {
   // Test-only response data; production properties come exclusively from Supabase.
   const fixtures: Property[] = [{
+    owner_id: user.id,
     property_id: "property_1001",
     title: "Test property",
     description: "Property used only by the API test",
@@ -87,7 +88,7 @@ test("booking CRUD uses Supabase", async (t) => {
     methods.push(init.method!);
     if (init.method === "POST") {
       const payload = JSON.parse(String(init.body));
-      assert.deepEqual(payload, { ...body, status: "pending" });
+      assert.deepEqual(payload, { ...body, guest_id: user.id, status: "pending" });
       stored = { ...payload, booking_id: "generated-booking-id", status: "pending" };
       return databaseRows([stored], init);
     }
@@ -97,7 +98,7 @@ test("booking CRUD uses Supabase", async (t) => {
       assert.ok(filter);
       const payload = JSON.parse(String(init.body));
       assert.equal(payload.booking_id, "generated-booking-id");
-      stored = payload;
+      stored = { ...payload, guest_id: user.id };
     }
     const result = stored ? [stored] : [];
     if (init.method === "DELETE") {
@@ -175,9 +176,10 @@ test("property writes use Supabase and preserve the route ID", async (t) => {
     assert.equal(url.pathname, "/rest/v1/properties");
     assert.equal(url.searchParams.get("select"), "*");
     if (method === "POST") {
-      assert.deepEqual(JSON.parse(String(init.body)), body);
+      assert.deepEqual(JSON.parse(String(init.body)), { ...body, owner_id: user.id });
     } else {
       assert.equal(url.searchParams.get("property_id"), "eq.generated-id");
+      assert.equal(url.searchParams.get("owner_id"), "eq." + user.id);
       if (method === "PATCH") {
         assert.deepEqual(JSON.parse(String(init.body)), { title: "Updated apartment", property_id: "generated-id" });
       }

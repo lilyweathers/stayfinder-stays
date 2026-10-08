@@ -40,12 +40,13 @@ bookingApp.post("/", bookingValidator, async (c) => {
     const bookingBody: NewBooking = c.req.valid("json");
     const { data, error } = await supabase
       .from("bookings")
-      .insert({ ...bookingBody, status: bookingBody.status ?? "pending" })
+      .insert({ ...bookingBody, guest_id: c.get("user")!.id, status: bookingBody.status ?? "pending" })
       .select("*")
       .single();
     if (error?.code === "23505") {
       return c.json({ error: "Booking ID already exists" }, 409);
     }
+    if (error?.code === "42501") return c.json({ error: "Booking access denied" }, 403);
     if (error) throw error;
     return c.json(data, 201);
   } catch (error) {
@@ -65,6 +66,7 @@ bookingApp.put("/:id", bookingValidator, async (c) => {
       .eq("booking_id", id)
       .select("*")
       .maybeSingle();
+    if (error?.code === "42501") return c.json({ error: "Booking access denied" }, 403);
     if (error) throw error;
     if (!data) return c.json({ error: "Booking not found" }, 404);
     return c.json(data);

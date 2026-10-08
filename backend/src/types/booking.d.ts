@@ -10,6 +10,7 @@ interface NewBooking {
 }
 
 interface Booking extends NewBooking {
+  guest_id: string | null;
   booking_id: string;
   status: "pending" | "confirmed" | "cancelled";
 }

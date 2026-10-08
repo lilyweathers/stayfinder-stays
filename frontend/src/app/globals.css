@@ -25,7 +25,7 @@ p {
 
 a { color: #155e75; }
 header { border-bottom: 1px solid #ddd; background: white; }
-nav { max-width: 960px; margin: auto; padding: 20px 24px; display: flex; gap: 24px; flex-wrap: wrap; }
+nav { max-width: 960px; margin: auto; padding: 20px 24px; display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
 .property-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 20px; }
 .card { background: white; padding: 24px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; }
 .card h2 { margin-top: 0; }

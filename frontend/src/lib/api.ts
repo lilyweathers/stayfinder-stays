@@ -1,4 +1,4 @@
-import type { ApiErrorResponse, AuthResponse } from "@/types/api";
+import type { ApiErrorResponse, AuthResponse, RegisterResponse } from "@/types/api";
 import type { Booking, NewBooking } from "@/types/booking";
 import type { Property } from "@/types/property";
 
@@ -20,7 +20,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
   if (!response.ok) {
     const body: ApiErrorResponse = await response.json().catch(() => ({}));
-    throw new ApiError(body.error || body.message || `Request failed (${response.status})`, response.status);
+    throw new ApiError(body.error || body.message || body.errors?.map(issue => issue.message).join(" ") || `Request failed (${response.status})`, response.status);
   }
   return response.json() as Promise<T>;
 }
@@ -34,3 +34,8 @@ export const createBooking = (booking: NewBooking) => request<Booking>("/booking
 export const login = (email: string, password: string) => request<AuthResponse>("/auth/login", {
   method: "POST", body: JSON.stringify({ email, password }),
 });
+export const getCurrentUser = () => request<AuthResponse>("/auth/me");
+export const register = (email: string, password: string) => request<RegisterResponse>("/auth/register", {
+  method: "POST", body: JSON.stringify({ email, password }),
+});
+export const logout = () => request<{ message: string }>("/auth/logout", { method: "POST" });

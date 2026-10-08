@@ -50,7 +50,8 @@ does not prove that PostgreSQL permissions or constraints work.
   invalid-session denial, and user-token forwarding with automated mocked tests.
 - [x] Verify live me and logout with recorded Postman results (user-confirmed
   sequence on 2026-10-06; see evidence log).
-- [ ] Add frontend registration/login/logout controls and session display.
+- [x] Add frontend registration/login/logout controls and session display.
+- [ ] Verify the complete browser registration/login/logout flow and session display.
 - [ ] Verify persistence after browser reload.
 
 ### Protected data (G6, G12, G15)
@@ -70,7 +71,14 @@ does not prove that PostgreSQL permissions or constraints work.
   checks on 2026-10-06; see evidence log).
 - [x] Verify direct Supabase reads/writes as anonymous and authenticated users
   (user reports all 43 Postman assertions passed on 2026-10-06).
-- [ ] Add VG1 ownership: current policies give all logged-in users shared access.
+- [ ] Add VG1 ownership: backend changes and SQL migration prepared; hosted database
+  still uses shared-access policies until database/002_ownership.sql is applied and verified.
+- [x] Derive property owner_id and booking guest_id from the authenticated API user.
+- [x] Filter property mutations by owner_id and reject client-supplied ownership fields.
+- [x] Prepare database ownership policies and immutable ownership triggers in
+  database/002_ownership.sql, plus rollback-only direct database checks.
+- [ ] Apply ownership SQL and backfill existing records to test@gmail.com as requested.
+- [ ] Run direct ownership checks with host, guest A, guest B, and anonymous roles.
 
 ### Checks and supporting files
 
@@ -99,9 +107,9 @@ does not prove that PostgreSQL permissions or constraints work.
 
 | Complete | Criterion | Required result | Current progress and remaining verification |
 | --- | --- | --- | --- |
-| [ ] | G1 | Visitors can register, log in, and log out. | Backend endpoints verified as recorded below. Frontend login form implemented in frontend/src/app/login/page.tsx; registration/logout controls and live browser verification remain. |
-| [ ] | G2 | Login survives reload; the app can identify the logged-in user. | Cookie sessions, refresh, and me implemented and covered by mocked tests. Live me/logout sequence confirmed by the user. Frontend identity display and browser reload checks remain. |
-| [ ] | G3 | Navigation changes for authenticated and anonymous visitors. | Shared navigation implemented, but links do not yet change with authentication state. |
+| [ ] | G1 | Visitors can register, log in, and log out. | Frontend register/login forms and logout control implemented. User confirmed registration, Mailtrap email confirmation, and login for user@gmail.com. Live browser logout verification remains. |
+| [ ] | G2 | Login survives reload; the app can identify the logged-in user. | Cookie sessions and current-user navigation implemented. Automated backend auth tests pass; frontend browser reload checks remain. |
+| [ ] | G3 | Navigation changes for authenticated and anonymous visitors. | Navigation uses /auth/me to show bookings, email, and logout for signed-in users, or login/register for visitors. Full browser transition verification remains. |
 | [ ] | G4 | Everyone can view the property list and individual details. | Public API and frontend list/detail routes implemented. Live list matches Supabase and is shown in user screenshots; live detail-page verification remains. |
 | [ ] | G5 | Filter by location, maximum price, and guest count. | Not implemented: property list does not apply location, price, or guest filters. |
 | [x] | G6 | Property writes require authentication in both API and database. | API guards and hosted basic RLS policies implemented. Live authenticated CRUD, anonymous API denial, and direct Supabase write restrictions confirmed by the user. Ownership is tracked under VG1. |
@@ -123,7 +131,7 @@ behavior must be backed by database enforcement or database queries as appropria
 
 | Done | Criterion | Planned location and reason | Verification to record |
 | --- | --- | --- | --- |
-| [ ] | VG1 Ownership | API verifies user identity and permitted operations; database ownership fields and row-level security enforce access independently. Derive owner IDs from the authenticated user. | Guest A cannot read guest B's bookings. Property owner sees all bookings for their property. Nonowner cannot update/delete a property. Spoofed ownership is denied through API and direct database requests. |
+| [ ] | VG1 Ownership | API derives ownership from verified identity, constrains property writes, and uses the user's token for booking RLS. database/002_ownership.sql replaces shared policies and prevents ownership/booking-property transfers. | 16 backend tests pass including forged-owner rejection and owner filters. Migration/backfill and database/tests/ownership.sql are prepared but not executed. Live guest isolation, host visibility, and direct SQL denials remain unverified. |
 | [ ] | VG2 No overlapping bookings | API reports a clear conflict; database enforces overlap protection atomically so concurrent requests cannot both succeed. Pending and confirmed bookings block dates; cancelled bookings do not. | Overlapping create and update rejected; unchanged booking does not clash with itself; cancelled booking ignored; back-to-back stays allowed under the planned date convention; simultaneous overlapping writes yield one success. |
 | [ ] | VG3 Capacity | API checks the property's current database capacity; database enforces the same rule on booking creation and updates. Client capacity values are never trusted. | Exactly max_guests allowed; max_guests + 1 rejected; use changed capacity; forged client capacity cannot bypass rule. |
 | [ ] | VG4 Status and roles | API checks roles and translates failures; database enforces transitions and who can perform them. Only property owner confirms; guest or owner cancels. | pending -> confirmed by owner; pending/confirmed -> cancelled by guest or owner; guest confirmation denied; unrelated user denied; cancelled booking edits denied; confirmed -> pending denied. |
@@ -167,6 +175,32 @@ These are proposed conventions, not extra requirements from the assignment.
 8. Verify all rules through API calls, direct database requests, and frontend flows.
 
 ## Evidence log
+
+### Frontend account controls - 2026-10-08
+
+frontend/src/components/Navigation.tsx shows the current user's email and calls
+POST /auth/logout; visitors see login/register links. frontend/src/app/register/page.tsx
+validates password confirmation and handles Supabase email confirmation.
+Frontend TypeScript and ESLint pass. The user confirmed signup for user@gmail.com,
+finding its confirmation message in Mailtrap, and logging in. Browser logout and
+reload persistence are not yet verified. The user reported shared booking access
+before the ownership migrations were applied; hosted migration status remains unconfirmed.
+
+### VG1 implementation prepared - 2026-10-08
+
+Code: backend/src/routes/properties.ts, backend/src/routes/bookings.ts,
+backend/tests/ownership.test.ts, database/002_ownership.sql,
+database/003_assign_existing_ownership.sql, database/tests/ownership.sql.
+The user selected test@gmail.com for existing ownership assignments.
+All 16 backend mocked tests and both frontend/backend TypeScript checks passed.
+Property owner and booking guest IDs are derived from the authenticated user;
+strict validators reject forged ownership fields. Property mutations constrain
+the owner. Booking visibility and participant mutations rely on the prepared
+RLS policies using the verified user's token. PostgreSQL triggers block direct
+identity/ownership changes and moving bookings to different properties.
+Existing records are preserved, with backfill only for null ownership values.
+Hosted migration and direct SQL tests have not been executed: this session has
+no SQL connection to the project. VG1 remains unchecked until live verification.
 
 ### Frontend foundation and data-source verification - 2026-10-08
 

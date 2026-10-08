@@ -43,9 +43,10 @@ propertiesApp.post("/", requireAuth, propertyValidator, async (c) => {
     const { title, description, location, price_per_night, max_guests } = propertyBody;
     const { data, error } = await supabase
       .from("properties")
-      .insert({ title, description, location, price_per_night, max_guests })
+      .insert({ title, description, location, price_per_night, max_guests, owner_id: c.get("user")!.id })
       .select("*")
       .single();
+    if (error?.code === "42501") return c.json({ error: "Property access denied" }, 403);
     if (error) throw error;
     return c.json(data, 201);
   } catch (error) {
@@ -63,8 +64,10 @@ propertiesApp.patch("/:id", requireAuth, partialPropertyValidator, async (c) => 
       .from("properties")
       .update({ ...propertyBody, property_id: id })
       .eq("property_id", id)
+      .eq("owner_id", c.get("user")!.id)
       .select("*")
       .maybeSingle();
+    if (error?.code === "42501") return c.json({ error: "Property access denied" }, 403);
     if (error) throw error;
     if (!data) return c.json({ error: "Property not found" }, 404);
     return c.json(data);
@@ -83,6 +86,7 @@ propertiesApp.put("/:id", requireAuth, propertyValidator, async (c) => {
       .from("properties")
       .update({ ...propertyBody, property_id: id })
       .eq("property_id", id)
+      .eq("owner_id", c.get("user")!.id)
       .select("*")
       .maybeSingle();
     if (error) throw error;
@@ -101,6 +105,7 @@ propertiesApp.delete("/:id", requireAuth, async (c) => {
       .from("properties")
       .delete()
       .eq("property_id", c.req.param("id"))
+      .eq("owner_id", c.get("user")!.id)
       .select("*")
       .maybeSingle();
     if (error) throw error;

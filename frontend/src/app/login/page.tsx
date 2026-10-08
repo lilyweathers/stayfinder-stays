@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { login } from "@/lib/api";
 
 export default function LoginPage() {
@@ -32,6 +33,7 @@ export default function LoginPage() {
         <button disabled={pending}>{pending ? "Signing in…" : "Sign in"}</button>
       </form>
       {error && <p role="alert">{error}</p>}
+      <p>New to StayFinder? <Link href="/register">Create an account</Link></p>
     </main>
   );
 }
