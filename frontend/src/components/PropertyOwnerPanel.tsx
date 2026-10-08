@@ -9,6 +9,7 @@ import PropertyEditForm from "@/components/PropertyEditForm";
 import BookingEditForm from "@/components/BookingEditForm";
 import CancelBookingButton from "@/components/CancelBookingButton";
 import ConfirmBookingButton from "@/components/ConfirmBookingButton";
+import DeleteBookingButton from "@/components/DeleteBookingButton";
 import DeletePropertyButton from "@/components/DeletePropertyButton";
 
 export default function PropertyOwnerPanel({ propertyId }: { propertyId: string }) {
@@ -72,6 +73,10 @@ export default function PropertyOwnerPanel({ propertyId }: { propertyId: string 
         <BookingEditForm booking={booking} maxGuests={property.max_guests} onSaved={bookingSaved} />
         <ConfirmBookingButton booking={booking} onConfirmed={bookingSaved} />
         <CancelBookingButton booking={booking} onCancelled={bookingSaved} />
+        <DeleteBookingButton booking={booking} onDeleted={id => {
+          setBookings(current => current.filter(item => item.booking_id !== id));
+          setNotice("Booking deleted.");
+        }} />
       </article>)}
     </>}
   </section>;

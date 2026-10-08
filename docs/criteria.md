@@ -188,7 +188,7 @@ does not prove that PostgreSQL permissions or constraints work.
 | [x] | G9 | Authenticated users can book from details; visitors are prompted to log in. | User confirmed the logged-out detail-page sign-in prompt, sign-in return with restored booking fields, and successful authenticated booking with success feedback and correct property/dates/guest count in Bookings on 2026-10-08. Backend booking creation also verified earlier. |
 | [x] | G10 | Reject invalid bookings and show understandable form errors. | API create/update now validate real YYYY-MM-DD dates, checkout after check-in, trimmed required name/property, valid email, and positive integer guests, returning 400 with field paths and messages. Create/edit forms show understandable errors and check displayed capacity. Past check-in is rejected in API/form using Europe/Stockholm, with same-day allowed. All 29 backend tests, TypeScript and ESLint pass. User confirmed invalid-form errors work and the browser date picker disables past dates on 2026-10-08. |
 | [x] | G11 | Show nights and total price before submission. | Booking form now previews calendar nights × current nightly price before submission; updates on field changes, restores after login, and clears after booking success. Calculation checks, frontend TypeScript and ESLint pass; user confirmed the live two-night preview shows 2,400 before submission on 2026-10-08. |
-| [ ] | G12 | Authenticated users can view, change, and delete bookings for a property. | My Properties lists owned properties and links to management pages with related bookings, property/booking editing, and confirm/cancel actions. Property editing uses PATCH; booking editing preserves status/identity. Frontend deletion and live browser verification remain. |
+| [x] | G12 | Authenticated users can view, change, and delete bookings for a property. | My Properties viewing/editing and pending-booking actions were user-verified. Added Delete booking with confirmation and list removal in owner management; API enforces participant ownership and active current/future dates, with conditional deletion and database denial translation. Existing RLS and migration 004 enforce database restrictions. All 30 backend tests and frontend type/lint checks pass; user confirmed browser deletion removes the booking and displays success on 2026-10-08. |
 | [ ] | G13 | Loading, fetch-error, and missing-property views exist. | Bookings loading/error states and property fetch-error messages implemented; detail route uses notFound() on 404. Property loading UI and live failure-state verification remain. |
 | [ ] | G14 | API returns appropriate status codes. | Automated tests cover 200/201/400/401/403/404/409/500 cases. Complete live status-code verification and invalid-date coverage remain. |
 | [x] | G15 | Database permissions protect tables independently of the API. | RLS enabled and eight basic policies applied and verified in the dashboard. All 43 direct Supabase assertions passed according to the user's Postman report, covering anonymous restrictions and authenticated CRUD. |
@@ -619,3 +619,26 @@ property page returned 200 with the initial preview prompt. The user subsequentl
 2026 at Harbor Loft shows two nights at 1,200 and estimated total 2,400
 before submission. G11 is complete on calculation and user-reported browser
 evidence.
+
+### Individual booking deletion implementation (G12) - 2026-10-08
+
+frontend/src/components/DeleteBookingButton.tsx adds permanent deletion with
+explicit confirmation in PropertyOwnerPanel. Successful deletion removes the
+row from the list and shows Booking deleted; failures preserve the row and show
+an error. Only pending/confirmed bookings with valid current/future check-in
+dates expose deletion controls.
+
+DELETE /bookings/:id reads under participant RLS, verifies guest or property
+owner identity, checks status/calendar date, and deletes with conditional status
+and date filters. Hidden/missing rows return 404, ownership violations 403, and
+blocked/changed bookings 409. Existing 002/008 RLS and the 004 cancellation
+trigger enforce ownership and past/cancelled deletion restrictions independently
+of the API; no new migration is required. Historical bookings remain protected.
+
+All 30 backend tests passed, including guest/host success, unrelated/anonymous
+denial, past/cancelled/invalid dates, missing rows, race conflicts and database
+denial translation. Frontend route generation, TypeScript, and ESLint passed.
+The user subsequently confirmed the instructed browser deletion check passed:
+confirmation deletes the disposable future booking, removes it from the list,
+and shows Booking deleted. Alongside previously verified viewing/editing and
+the passing permission tests, this completes G12 on user-reported browser evidence.

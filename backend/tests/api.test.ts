@@ -145,7 +145,7 @@ test("booking CRUD uses Supabase", async (t) => {
 
   const missingResponse = await request(`/bookings/${created.booking_id}`);
   assert.equal(missingResponse.status, 404);
-  assert.deepEqual(methods, ["POST", "GET", "GET", "PATCH", "DELETE", "GET"]);
+  assert.deepEqual(methods, ["POST", "GET", "GET", "PATCH", "GET", "DELETE", "GET"]);
 });
 
 test("invalid booking input returns validation details", async (t) => {

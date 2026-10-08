@@ -47,6 +47,7 @@ export const updateBooking = (id: string, booking: NewBooking & { status: Bookin
 export const getBookings = () => request<Booking[]>("/bookings");
 export const getPropertyBookings = (id: string) => request<Booking[]>(`/bookings?property_id=${encodeURIComponent(id)}`);
 export const confirmBooking = (id: string) => request<Booking>(`/bookings/${encodeURIComponent(id)}/confirm`, { method: "POST" });
+export const deleteBooking = (id: string) => request<Booking>(`/bookings/${encodeURIComponent(id)}`, { method: "DELETE" });
 export const cancelBooking = (id: string) => request<Booking>(`/bookings/${encodeURIComponent(id)}/cancel`, {
   method: "POST",
 });
