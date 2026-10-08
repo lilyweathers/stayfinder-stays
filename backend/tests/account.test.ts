@@ -36,6 +36,11 @@ test("account deletion verifies password and identity before deleting only the c
       if (mode === "wrong-password") return Response.json({ msg: "Invalid login credentials" }, { status: 400 });
       return Response.json({ ...session, user: mode === "wrong-user" ? { ...user, id: "victim" } : user });
     }
+    if (url.pathname === "/storage/v1/object/list/profile-photos") {
+      assert.equal(JSON.parse(String(init.body)).prefix, user.id);
+      assert.equal(new Headers(init.headers).get("apikey"), "test-admin-key");
+      return Response.json([]);
+    }
     if (url.pathname === `/auth/v1/admin/users/${user.id}`) {
       assert.equal(init.method, "DELETE");
       assert.equal(new Headers(init.headers).get("apikey"), "test-admin-key");

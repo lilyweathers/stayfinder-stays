@@ -1,6 +1,7 @@
+import type { ProfilePhotoInput } from "@/lib/profile-photo";
 import type { ApiErrorResponse, AuthResponse, RegisterResponse } from "@/types/api";
 import type { Booking, NewBooking } from "@/types/booking";
-import type { Property, PropertyInput, PropertyFilters } from "@/types/property";
+import type { Property, PropertyInput, PropertyFilters, PropertyHost } from "@/types/property";
 
 const apiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000").replace(/\/$/, "");
 
@@ -37,6 +38,7 @@ export const createProperty = (property: PropertyInput) => request<Property>("/p
   method: "POST", body: JSON.stringify(property),
 });
 export const deleteProperty = (id: string) => request<{ message: string; property: Property; cancelled_bookings: number }>(`/properties/${encodeURIComponent(id)}`, { method: "DELETE" });
+export const getPropertyHost = (id: string) => request<PropertyHost>(`/properties/${encodeURIComponent(id)}/host`);
 export const getProperty = (id: string) => request<Property>(`/properties/${encodeURIComponent(id)}`);
 export const updateProperty = (id: string, property: PropertyInput) => request<Property>(`/properties/${encodeURIComponent(id)}`, {
   method: "PATCH", body: JSON.stringify(property),
@@ -61,7 +63,8 @@ export const getCurrentUser = () => request<AuthResponse>("/auth/me");
 export const deleteAccount = (password: string) => request<{ message: string }>("/auth/account", {
   method: "DELETE", body: JSON.stringify({ password }),
 });
-export const register = (email: string, password: string) => request<RegisterResponse>("/auth/register", {
-  method: "POST", body: JSON.stringify({ email, password }),
+export const updateProfile = (name: string, photo?: ProfilePhotoInput, remove_photo = false) => request<AuthResponse>("/auth/profile", { method: "PATCH", body: JSON.stringify({ name, photo, remove_photo }) });
+export const register = (email: string, password: string, name?: string, photo?: ProfilePhotoInput) => request<RegisterResponse>("/auth/register", {
+  method: "POST", body: JSON.stringify({ email, password, name, photo }),
 });
 export const logout = () => request<{ message: string }>("/auth/logout", { method: "POST" });

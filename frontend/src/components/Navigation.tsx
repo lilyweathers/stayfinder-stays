@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ApiError, getCurrentUser, logout } from "@/lib/api";
+import { profileName } from "@/lib/profile";
 import type { AuthResponse } from "@/types/api";
 
 export default function Navigation() {
@@ -15,7 +16,7 @@ export default function Navigation() {
 
   useEffect(() => {
     let active = true;
-    getCurrentUser().then(({ user }) => {
+    function loadUser() { getCurrentUser().then(({ user }) => {
       if (active) {
         setUser(user);
         setError("");
@@ -29,7 +30,10 @@ export default function Navigation() {
         setError("Could not check your session. Please reload to try again.");
       }
     });
-    return () => { active = false; };
+    }
+    loadUser();
+    window.addEventListener("stayfinder:profile-updated", loadUser);
+    return () => { active = false; window.removeEventListener("stayfinder:profile-updated", loadUser); };
   }, [pathname]);
 
   async function signOut() {
@@ -58,8 +62,7 @@ export default function Navigation() {
       {user ? <>
         <Link href="/my-properties">My Properties</Link>
         <Link href="/bookings">Bookings</Link>
-        <Link href="/profile">Profile</Link>
-        <span>Signed in as {user.email || "StayFinder user"}</span>
+        <Link href="/profile" title="View your profile">{profileName(user) || user.email || "Your profile"}</Link>
         <button type="button" onClick={signOut} disabled={pending}>
           {pending ? "Signing out…" : "Sign out"}
         </button>

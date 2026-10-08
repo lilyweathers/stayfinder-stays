@@ -1,4 +1,4 @@
-// Application-facing public schema after migrations 001–013.
+// Application-facing public schema after migrations 001–016.
 // Maintained from the repository SQL and API fields; update with schema changes.
 export type BookingStatus = "pending" | "confirmed" | "cancelled";
 
@@ -34,6 +34,8 @@ export type BookingInsert = Pick<BookingRow,
   "property_id" | "guest_name" | "guest_email" | "check_in" | "check_out" | "guests">
   & Partial<Pick<BookingRow, "booking_id" | "guest_id" | "status" | "deleted_property_title">>;
 
+export type PropertyHost = { name: string; avatar_url: string | null };
+
 export type DeletePropertyResult = { property: PropertyRow; cancelled_bookings: number };
 
 export type Database = {
@@ -45,6 +47,7 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      get_property_host: { Args: { p_property_id: string }; Returns: PropertyHost | null };
       delete_property: { Args: { p_property_id: string }; Returns: DeletePropertyResult | null };
     };
     Enums: { [_ in never]: never };

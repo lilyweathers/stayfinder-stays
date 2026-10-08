@@ -1,5 +1,7 @@
 "use client";
 
+import ProfilePhotoField from "@/components/ProfilePhotoField";
+import { readPhoto } from "@/lib/profile-photo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -23,7 +25,9 @@ export default function RegisterPage() {
     }
     setPending(true);
     try {
-      const result = await register(String(data.get("email")).trim(), password);
+      const file = data.get("photo");
+      const photo = file instanceof File && file.size ? await readPhoto(file) : undefined;
+      const result = await register(String(data.get("email")).trim(), password, String(data.get("name")).trim(), photo);
       if (result.confirmationRequired) {
         setConfirmationRequired(true);
         form.reset();
@@ -45,6 +49,8 @@ export default function RegisterPage() {
         <p role="status">Check your email for a confirmation link. After confirming your email, sign in to StayFinder.</p>
       ) : (
         <form onSubmit={submit}>
+          <label>Name<input name="name" required maxLength={100} autoComplete="name" /></label>
+          <ProfilePhotoField disabled={pending} />
           <label>Email<input name="email" type="email" required autoComplete="email" /></label>
           <label>Password<input name="password" type="password" minLength={6} required autoComplete="new-password" aria-describedby="password-help" /></label>
           <p id="password-help">Use at least 6 characters.</p>

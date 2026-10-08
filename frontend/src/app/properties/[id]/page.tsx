@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import PropertyHost from "@/components/PropertyHost";
 import PropertyImage from "@/components/PropertyImage";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -20,6 +22,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
       <PropertyImage src={property.image_url} title={property.title} detail />
       <p>{property.description}</p>
       <p>{property.price_per_night} per night · Up to {property.max_guests} guests</p>
+      <Suspense fallback={<p role="status">Loading host information…</p>}><PropertyHost propertyId={property.property_id} /></Suspense>
       <BookingForm property={property} />
     </main>
   );

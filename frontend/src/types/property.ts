@@ -17,3 +17,5 @@ export interface PropertyFilters {
   max_price?: string;
   guests?: string;
 }
+
+export interface PropertyHost { name: string; avatar_url: string | null }

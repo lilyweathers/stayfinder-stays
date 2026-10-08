@@ -33,6 +33,16 @@ propertiesApp.get("/", propertyFilterValidator, async (c) => {
   }
 });
 
+propertiesApp.get("/:id/host", async (c) => {
+  const { data, error } = await c.get("supabase").rpc("get_property_host", { p_property_id: c.req.param("id") });
+  if (error) {
+    console.error("Failed to read property host", error);
+    return c.json({ error: "Could not load host information" }, 503);
+  }
+  if (!data) return c.json({ error: "Host information not found" }, 404);
+  return c.json(data);
+});
+
 propertiesApp.get("/:id", async (c) => {
   const supabase = c.get("supabase");
   try {
