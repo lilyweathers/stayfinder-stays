@@ -52,3 +52,4 @@ DO $$ BEGIN
 END $$;
 RESET ROLE;
 ROLLBACK;
+SELECT 'PASS: cancellation permissions and restrictions verified; test records rolled back' AS result;

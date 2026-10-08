@@ -28,8 +28,9 @@ does not prove that PostgreSQL permissions or constraints work.
   the live Postman me/logout sequence passed and reports successful property and
   booking CRUD. Live anonymous API denial and public property reads are also
   user-confirmed. The user also reports all 43 direct Supabase RLS assertions passed.
-- Basic RLS allows all authenticated users shared access. VG1 ownership and the
-  other VG rules remain unfinished. No complete fullstack criterion is claimed here.
+- Ownership policies are now active: the user confirmed the full direct database
+  ownership test script passed without errors on 2026-10-08. Full VG1 live API/browser
+  verification and the other VG rules remain unfinished.
 
 ## Completed milestones
 
@@ -71,14 +72,20 @@ does not prove that PostgreSQL permissions or constraints work.
   checks on 2026-10-06; see evidence log).
 - [x] Verify direct Supabase reads/writes as anonymous and authenticated users
   (user reports all 43 Postman assertions passed on 2026-10-06).
-- [ ] Add VG1 ownership: backend changes and SQL migration prepared; hosted database
-  still uses shared-access policies until database/002_ownership.sql is applied and verified.
+- [x] Add VG1 ownership implementation and verify hosted database policies
+  (user-confirmed full ownership.sql run without errors on 2026-10-08).
 - [x] Derive property owner_id and booking guest_id from the authenticated API user.
 - [x] Filter property mutations by owner_id and reject client-supplied ownership fields.
 - [x] Prepare database ownership policies and immutable ownership triggers in
   database/002_ownership.sql, plus rollback-only direct database checks.
-- [ ] Apply ownership SQL and backfill existing records to test@gmail.com as requested.
-- [ ] Run direct ownership checks with host, guest A, guest B, and anonymous roles.
+- [x] Apply ownership policies (verified by the user-reported passing database checks).
+- [x] Verify existing-record backfill to test@gmail.com (user-confirmed 2026-10-08).
+  Public API reads showed six assigned original properties; the supplied SQL
+  screenshot shows four bookings assigned to test@gmail.com. The user confirmed
+  the follow-up summary query worked after being given the expected counts.
+- [x] Run direct ownership checks with host, guest A, guest B, and anonymous roles
+  (user-confirmed 2026-10-08; entire script completed without errors).
+- [ ] Verify ownership through live API/browser requests with both real accounts.
 
 ### Checks and supporting files
 
@@ -97,7 +104,9 @@ does not prove that PostgreSQL permissions or constraints work.
 - [x] Add booking cancellation confirmation, pending/error/success feedback, and
   local status updates through POST /bookings/:id/cancel.
 - [x] Add API cancellation ownership, status, and check-in guards with conditional updates.
-- [ ] Apply database/004_booking_cancellation.sql and verify direct database cancellation rules.
+- [x] Apply database/004_booking_cancellation.sql (user-confirmed 2026-10-08).
+- [x] Verify direct database cancellation rules with database/tests/cancellation.sql
+  (user-confirmed passing run on 2026-10-08).
 
 - [x] Add public property list and dynamic detail routes using the backend API.
 - [x] Add reusable PropertyCard, PropertyList, and BookingForm components.
@@ -136,7 +145,7 @@ behavior must be backed by database enforcement or database queries as appropria
 
 | Done | Criterion | Planned location and reason | Verification to record |
 | --- | --- | --- | --- |
-| [ ] | VG1 Ownership | API derives ownership from verified identity, constrains property writes, and uses the user's token for booking RLS. database/002_ownership.sql replaces shared policies and prevents ownership/booking-property transfers. | 16 backend tests pass including forged-owner rejection and owner filters. Migration/backfill and database/tests/ownership.sql are prepared but not executed. Live guest isolation, host visibility, and direct SQL denials remain unverified. |
+| [ ] | VG1 Ownership | API derives ownership from verified identity, constrains property writes, and uses the user's token for booking RLS. database/002_ownership.sql replaces shared policies and prevents ownership/booking-property transfers. | Automated API ownership checks pass. User confirmed entire database/tests/ownership.sql passed on 2026-10-08, covering guest isolation, host visibility, nonowner mutations, and spoofed ownership. Existing-record backfill verified with supplied booking screenshot and user-confirmed summary query. Live API/browser checks with both real accounts remain unverified. |
 | [ ] | VG2 No overlapping bookings | API reports a clear conflict; database enforces overlap protection atomically so concurrent requests cannot both succeed. Pending and confirmed bookings block dates; cancelled bookings do not. | Overlapping create and update rejected; unchanged booking does not clash with itself; cancelled booking ignored; back-to-back stays allowed under the planned date convention; simultaneous overlapping writes yield one success. |
 | [ ] | VG3 Capacity | API checks the property's current database capacity; database enforces the same rule on booking creation and updates. Client capacity values are never trusted. | Exactly max_guests allowed; max_guests + 1 rejected; use changed capacity; forged client capacity cannot bypass rule. |
 | [ ] | VG4 Status and roles | API checks roles and translates failures; database enforces transitions and who can perform them. Only property owner confirms; guest or owner cancels. | pending -> confirmed by owner; pending/confirmed -> cancelled by guest or owner; guest confirmation denied; unrelated user denied; cancelled booking edits denied; confirmed -> pending denied. |
@@ -191,7 +200,12 @@ Same-day cancellation is allowed; the date boundary uses Europe/Stockholm.
 The record is retained. All 17 backend mocked tests pass, including guest/host
 success, unrelated-user denial, past/cancelled/missing bookings, and a concurrent
 change. Frontend typecheck and lint pass. database/004_booking_cancellation.sql
-and database/tests/cancellation.sql are prepared but not applied/executed.
+was applied according to the user on 2026-10-08. The user also confirmed that the
+entire database/tests/cancellation.sql script passed on 2026-10-08. This is
+user-reported evidence; a raw result export was not supplied. The direct database
+checks cover guest/host cancellation, unrelated-user denial, cancelled-booking
+reopen/delete denial, and past-booking cancellation/date-change denial. Test
+records were rolled back by the script.
 Live browser cancellation remains unverified. VG4/VG5 remain incomplete, including
 confirmation permissions and create-time date enforcement.
 
@@ -203,7 +217,8 @@ validates password confirmation and handles Supabase email confirmation.
 Frontend TypeScript and ESLint pass. The user confirmed signup for user@gmail.com,
 finding its confirmation message in Mailtrap, and logging in. Browser logout and
 reload persistence are not yet verified. The user reported shared booking access
-before the ownership migrations were applied; hosted migration status remains unconfirmed.
+before the ownership migrations were applied; the user subsequently confirmed
+the direct database ownership checks passed as recorded below.
 
 ### VG1 implementation prepared - 2026-10-08
 
@@ -218,8 +233,19 @@ the owner. Booking visibility and participant mutations rely on the prepared
 RLS policies using the verified user's token. PostgreSQL triggers block direct
 identity/ownership changes and moving bookings to different properties.
 Existing records are preserved, with backfill only for null ownership values.
-Hosted migration and direct SQL tests have not been executed: this session has
-no SQL connection to the project. VG1 remains unchecked until live verification.
+The user subsequently confirmed the entire database/tests/ownership.sql script
+completed without errors on 2026-10-08, including RESET ROLE and ROLLBACK. The
+displayed {"role":"anon"} was the final set_config result, not an error.
+This is user-reported evidence; the test checks guest isolation, host visibility,
+nonowner update/delete denial, spoofed ownership denial, immutable ownership,
+and anonymous property/booking visibility. Test records were rolled back.
+Existing-record backfill was subsequently verified using database/tests/backfill.sql:
+the supplied screenshot shows all four bookings and their properties assigned to
+test@gmail.com. The user confirmed the summary query worked after being given
+expected counts of 1 matching account, 6 original properties found/assigned,
+0 unassigned properties, 4 total bookings/assigned, and 0 unassigned bookings.
+The summary result itself was not supplied as an export or screenshot.
+VG1 remains unchecked pending live API/browser ownership verification with both real accounts.
 
 ### Frontend foundation and data-source verification - 2026-10-08
 
