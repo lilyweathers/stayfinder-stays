@@ -93,3 +93,7 @@ Apply migration `database/021_booking_capacity.sql` after 020, first checking `d
 ### VG4 booking status and roles
 
 Database enforcement already exists in migrations 002, 006 and 012. Run the expanded rollback test `database/tests/status_roles.sql` and the live runner using [status verification instructions](requests/status-live.md). General booking edits preserve saved status when omitted and check participant roles and allowed transitions.
+
+### VG5 booking time rules
+
+Apply `database/022_booking_time.sql` after 021 and run `database/tests/time_rules.sql`. Follow [time verification instructions](requests/time-live.md) for the live runner and documented Europe/Stockholm calendar-date policy. Same-day check-in is allowed; past check-in and mutations of already-past bookings are rejected.

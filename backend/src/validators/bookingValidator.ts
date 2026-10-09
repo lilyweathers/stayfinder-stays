@@ -1,3 +1,4 @@
+import { bookingToday } from "../lib/booking-date.js";
 import { zValidator } from "@hono/zod-validator";
 import * as z from "zod";
 
@@ -23,8 +24,7 @@ export const bookingSchema = z.object({
   booking_id: z.string().min(1).optional(),
   status: z.enum(["pending", "confirmed", "cancelled"]).optional(),
 }).strict().superRefine((booking, context) => {
-  const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm",
-    year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const today = bookingToday();
   if (isCalendarDate(booking.check_in) && booking.check_in < today) {
     context.addIssue({ code: "custom", path: ["check_in"], message: "Check-in cannot be in the past" });
   }

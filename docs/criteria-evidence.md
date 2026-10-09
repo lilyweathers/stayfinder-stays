@@ -815,3 +815,17 @@ Expanded rollback-only database/tests/status_roles.sql additionally includes a t
 ### VG4 verification complete - 2026-10-09
 
 User confirmed the expanded rollback-only database/tests/status_roles.sql passed. Together with the 58 passing backend tests, TypeScript checks, and 133 successful live API/direct-Supabase checks recorded above, this completes VG4. The checklist is now marked complete.
+
+### VG5 booking time implementation prepared - 2026-10-09
+
+API validators already rejected past proposed check-in; migrations 004/012 protected historical bookings. Migration 022 fills the missing direct-database create/update date check. Normal anon/authenticated writes require check-in today or later in Europe/Stockholm and checkout after check-in; edits to an already-past saved booking are rejected even when moving dates forward. Administrator history/backfill remains possible, and no existing records are modified. Existing cancellation/deletion protections retain the same policy.
+
+The API now shares bookingToday across validation, editing, confirmation, cancellation and deletion. General edits explicitly reject past saved check-in and translate database date/check errors to 409. The database exposes the date-only booking_calendar_date function for deterministic timezone verification. Same-day check-in stays allowed. Database transaction time and API wall-clock time can differ at midnight; the final database guard rejects a now-past write.
+
+All 61 backend tests and TypeScript checks passed. Deterministic tests cover Stockholm winter/summer midnight and both DST transitions; validation rejects yesterday and allows today/future. API tests cover both participant roles attempting to edit/move/cancel past bookings, plus owner confirmation and deletion protection, and clear database rejection mapping. The live runner passes syntax validation. Hosted migration 022, rollback tests and live verification have not run; VG5 remains unchecked. The rollback test creates historical fixtures as administrator, tests both roles and runs under Pacific/Honolulu session timezone to check timezone independence. Instructions: requests/time-live.md.
+
+### VG5 hosted verification complete - 2026-10-09
+
+User confirmed migration 022 and database/tests/time_rules.sql passed, covering administrator-created historical fixtures, both participant roles, and session-timezone independence. The live runner then passed all 28 checks with separate host/guest sessions against the current API and hosted Supabase. Past booking creation was rejected through API (400) and direct Supabase (400/23514). Today and future creation were accepted through both paths. Same-day confirmation, editing with preserved confirmed status, and cancellation were accepted. Guest and owner attempts to move future check-in into the past were rejected through API and database; the saved date was unchanged. All eight hosted winter/summer midnight and spring/autumn DST date-function results matched the API helper.
+
+All disposable records were removed and runner sessions logged out locally. Together with the 61 passing backend tests, TypeScript checks and user-confirmed rollback SQL tests, this completes VG5. Already-past saved-booking mutations were verified by SQL historical fixtures and API tests, not by live historical writes with regular user credentials. No additional browser or actual-midnight race checks are claimed.

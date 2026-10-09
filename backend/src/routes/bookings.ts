@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { requireAuth } from "../middleware/auth.js";
 import { bookingValidator } from "../validators/bookingValidator.js";
+import { bookingToday } from "../lib/booking-date.js";
 import { checkBookingCapacity } from "../lib/booking-capacity.js";
 
 const bookingApp = new Hono({ strict: false });
@@ -66,6 +67,7 @@ bookingApp.post("/", bookingValidator, async (c) => {
     if (error?.code === "23P01") return c.json({ error: "This property is already booked for the selected dates. Choose different dates." }, 409);
     if (error?.code === "23514" && error.message === "Guest count exceeds property capacity") return c.json({ error: "The property's capacity has changed. Choose fewer guests and try again." }, 409);
     if (error?.code === "42501") return c.json({ error: "Booking access denied" }, 403);
+    if (error?.code === "23514") return c.json({ error: "This booking cannot be created. Check its dates and status." }, 409);
     if (error) throw error;
     return c.json(data, 201);
   } catch (error) {
@@ -93,6 +95,7 @@ bookingApp.put("/:id", bookingValidator, async (c) => {
       if (property?.owner_id !== userId) return c.json({ error: status === "confirmed" && status !== booking.status
         ? "Only the property owner can confirm bookings" : "Booking access denied" }, 403);
     }
+    if (booking.check_in < bookingToday()) return c.json({ error: "Bookings with past check-in dates cannot be edited" }, 409);
     if (booking.status === "cancelled") return c.json({ error: "Cancelled bookings cannot be edited" }, 409);
     if (status !== booking.status && !(booking.status === "pending" && status === "confirmed")
       && !(["pending", "confirmed"].includes(booking.status) && status === "cancelled")) {
@@ -123,7 +126,7 @@ bookingApp.put("/:id", bookingValidator, async (c) => {
 bookingApp.post("/:id/confirm", async (c) => {
   const supabase = c.get("supabase");
   const id = c.req.param("id");
-  const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const today = bookingToday();
   try {
     const { data: booking, error: readError } = await supabase.from("bookings").select("*").eq("booking_id", id).maybeSingle();
     if (readError) throw readError;
@@ -149,9 +152,7 @@ bookingApp.post("/:id/cancel", async (c) => {
   const supabase = c.get("supabase");
   const id = c.req.param("id");
   const userId = c.get("user")!.id;
-  const today = new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Europe/Stockholm", year: "numeric", month: "2-digit", day: "2-digit",
-  }).format(new Date());
+  const today = bookingToday();
   try {
     const { data: booking, error: readError } = await supabase.from("bookings")
       .select("*").eq("booking_id", id).maybeSingle();
@@ -191,8 +192,7 @@ bookingApp.delete("/:id", async (c) => {
   const supabase = c.get("supabase");
   const id = c.req.param("id");
   const userId = c.get("user")!.id;
-  const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm",
-    year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const today = bookingToday();
   try {
     const { data: booking, error: readError } = await supabase.from("bookings")
       .select("*").eq("booking_id", id).maybeSingle();

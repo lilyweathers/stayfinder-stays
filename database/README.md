@@ -210,3 +210,7 @@ Run `tests/host_cancelled_booking_deletion.sql` for rollback-only verification.
 The user confirmed the migration, hosted tests, and browser flow work on
 2026-10-08. Do not reapply 004 afterward, as it
 would restore the older blanket cancelled-deletion restriction.
+
+## VG5 time enforcement (022)
+
+Apply `022_booking_time.sql` after 021. This adds independent create/update checks for the Europe/Stockholm calendar-date policy while retaining historical records. Run `tests/time_rules.sql`; fixtures roll back. See `requests/time-live.md` at the repository root for API/direct-Supabase verification and midnight/DST boundaries. Earlier notes describing VG4 status enforcement as pending have been superseded by the verified criteria checklist.
