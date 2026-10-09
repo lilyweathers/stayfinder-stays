@@ -1,0 +1,44 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+process.env.SUPABASE_URL = "https://test.supabase.co";
+process.env.SUPABASE_KEY = "test-key";
+const { default: app } = await import("../src/app.js");
+const { calculateBookingPrice } = await import("../src/lib/booking-price.js");
+const user = { id: "price-guest", email: "guest@example.com", aud: "authenticated" };
+const token = ["header", Buffer.from(JSON.stringify({ exp: 4102444800, sub: user.id })).toString("base64url"), "signature"].join(".");
+const cookie = "sb-test-auth-token=base64-" + Buffer.from(JSON.stringify({ access_token: token, refresh_token: "refresh", expires_at: 4102444800, expires_in: 3600, token_type: "bearer", user })).toString("base64url");
+const body = { property_id: "p1", guest_name: "Guest", guest_email: user.email, guests: 1, check_in: "2099-01-01", check_out: "2099-01-04" };
+test("server monetary arithmetic handles decimals, leap dates, DST stays and invalid values", () => {
+  assert.deepEqual(calculateBookingPrice(body.check_in, body.check_out, 123.45), { nightly_price: 123.45, total_price: 370.35 });
+  assert.deepEqual(calculateBookingPrice(body.check_in, body.check_out, 1.005), { nightly_price: 1.01, total_price: 3.03 });
+  assert.deepEqual(calculateBookingPrice(body.check_in, body.check_out, 1e-7), { nightly_price: 0, total_price: 0 });
+  assert.equal(calculateBookingPrice("2028-02-28", "2028-03-01", 100).total_price, 200);
+  assert.equal(calculateBookingPrice("2027-03-27", "2027-03-29", 100).total_price, 200);
+  assert.equal(calculateBookingPrice("2027-10-30", "2027-11-01", 100).total_price, 200);
+  for (const value of [-1, NaN, Infinity, 1e15]) assert.throws(() => calculateBookingPrice(body.check_in, body.check_out, value));
+});
+test("creation ignores all client price fields and persists database-rate total; edits keep frozen rate", async (t) => {
+  let currentRate = 123.45;
+  let stored: Record<string, unknown> | undefined;
+  t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
+    const url = new URL(String(input));
+    if (url.pathname === "/auth/v1/user") return Response.json(user);
+    assert.equal(new Headers(init.headers).get("Authorization"), `Bearer ${token}`);
+    if (url.pathname === "/rest/v1/properties") return Response.json([{ max_guests: 2, price_per_night: currentRate }]);
+    if (init.method === "GET") return Response.json(stored ? [stored] : []);
+    const payload = JSON.parse(String(init.body));
+    assert.equal(payload.nightly_price, 123.45);
+    assert.equal(payload.total_price, init.method === "POST" ? 370.35 : 493.8);
+    assert.equal(payload.price_per_night, undefined);
+    stored = { ...stored, ...payload, booking_id: "b1", guest_id: user.id };
+    return Response.json(init.method === "POST" ? stored : [stored]);
+  });
+  const headers = { Cookie: cookie, "Content-Type": "application/json" };
+  const create = await app.request("/bookings", { method: "POST", headers, body: JSON.stringify({ ...body, total_price: 1, nightly_price: 0, price_per_night: "free" }) });
+  assert.equal(create.status, 201); assert.equal((await create.json()).total_price, 370.35);
+  currentRate = 999;
+  const existing = await app.request("/bookings/b1", { headers });
+  assert.equal((await existing.json()).total_price, 370.35);
+  const update = await app.request("/bookings/b1", { method: "PUT", headers, body: JSON.stringify({ ...body, check_out: "2099-01-05", total_price: { forged: true }, nightly_price: 999 }) });
+  assert.equal(update.status, 200); assert.equal((await update.json()).total_price, 493.8);
+});

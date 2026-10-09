@@ -140,6 +140,7 @@ export default function BookingsPage() {
                   </div>
                   <details className="stay-booking-record"><summary>Guest details and booking reference</summary>
                     <dl className="booking-details"><dt>Guest</dt><dd>{booking.guest_name}</dd><dt>Email</dt><dd>{booking.guest_email}</dd>
+                      <dt>Booking total</dt><dd>{new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(booking.total_price)}</dd>
                       <dt>Booking reference</dt><dd>{booking.booking_id}</dd></dl>
                   </details>
                   {!property && propertiesLoaded && <p className="stay-booking-history">This property has been deleted. This booking is retained for your records.</p>}

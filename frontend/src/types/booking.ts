@@ -8,7 +8,9 @@ export interface Booking {
   check_in: string;
   check_out: string;
   guests: number;
+  nightly_price: number;
+  total_price: number;
   status: "pending" | "confirmed" | "cancelled";
 }
 
-export type NewBooking = Omit<Booking, "booking_id" | "status" | "guest_id" | "deleted_property_title">;
+export type NewBooking = Omit<Booking, "booking_id" | "status" | "guest_id" | "deleted_property_title" | "nightly_price" | "total_price">;

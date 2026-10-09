@@ -60,7 +60,7 @@ test("a database date rejection after API validation is a clear conflict", async
   t.mock.method(globalThis, "fetch", async (input: unknown) => {
     const path = new URL(String(input)).pathname;
     if (path === "/auth/v1/user") return Response.json(user);
-    if (path === "/rest/v1/properties") return Response.json([{ max_guests: 2 }]);
+    if (path === "/rest/v1/properties") return Response.json([{ max_guests: 2, price_per_night: 100 }]);
     return Response.json({ code: "23514", message: "Check-in cannot be in the past" }, { status: 400 });
   });
   const response = await app.request("/bookings", { method: "POST", headers: { Cookie: cookie, "Content-Type": "application/json" }, body: JSON.stringify(body) });

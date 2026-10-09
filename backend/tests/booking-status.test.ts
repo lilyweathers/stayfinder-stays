@@ -18,8 +18,8 @@ test("general update checks participants and status transitions before writing",
     const url = new URL(String(input));
     if (url.pathname === "/auth/v1/user") return Response.json(user);
     assert.equal(new Headers(init.headers).get("Authorization"), `Bearer ${token}`);
-    if (url.pathname === "/rest/v1/properties") return Response.json([{ owner_id: owner, max_guests: 2 }]);
-    if (init.method === "GET") return Response.json([{ ...body, booking_id: "b1", guest_id: guest, status }]);
+    if (url.pathname === "/rest/v1/properties") return Response.json([{ owner_id: owner, max_guests: 2, price_per_night: 100 }]);
+    if (init.method === "GET") return Response.json([{ ...body, booking_id: "b1", guest_id: guest, nightly_price: 100, total_price: 200, status }]);
     writes++;
     assert.equal(url.searchParams.get("status"), "eq." + status);
     return Response.json([{ ...JSON.parse(String(init.body)), guest_id: guest }]);
@@ -61,8 +61,8 @@ test("database transition errors and concurrent status changes return clear conf
   t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
     const path = new URL(String(input)).pathname;
     if (path === "/auth/v1/user") return Response.json(user);
-    if (path === "/rest/v1/properties") return Response.json([{ max_guests: 2 }]);
-    if (init.method === "GET") return Response.json([{ ...body, booking_id: "b1", guest_id: user.id, status: "pending" }]);
+    if (path === "/rest/v1/properties") return Response.json([{ max_guests: 2, price_per_night: 100 }]);
+    if (init.method === "GET") return Response.json([{ ...body, booking_id: "b1", guest_id: user.id, nightly_price: 100, total_price: 200, status: "pending" }]);
     return Response.json(result, { status: httpStatus });
   });
   assert.equal((await request()).status, 409);

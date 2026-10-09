@@ -23,7 +23,11 @@ export const bookingSchema = z.object({
     .max(Number.MAX_SAFE_INTEGER, "Guest count is too large"),
   booking_id: z.string().min(1).optional(),
   status: z.enum(["pending", "confirmed", "cancelled"]).optional(),
-}).strict().superRefine((booking, context) => {
+  // Accepted solely to discard forged/client-calculated prices before writes.
+  total_price: z.unknown().optional(),
+  nightly_price: z.unknown().optional(),
+  price_per_night: z.unknown().optional(),
+}).strict().transform(({ total_price: _total, nightly_price: _nightly, price_per_night: _rate, ...booking }) => booking).superRefine((booking, context) => {
   const today = bookingToday();
   if (isCalendarDate(booking.check_in) && booking.check_in < today) {
     context.addIssue({ code: "custom", path: ["check_in"], message: "Check-in cannot be in the past" });

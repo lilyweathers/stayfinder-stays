@@ -15,11 +15,11 @@ test("create and update report database exclusion conflicts without exposing ano
   t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
     const url = new URL(String(input));
     if (url.pathname === "/auth/v1/user") return Response.json(user);
-    if (url.pathname === "/rest/v1/properties") return Response.json([{ max_guests: 2 }]);
+    if (url.pathname === "/rest/v1/properties") return Response.json([{ max_guests: 2, price_per_night: 100 }]);
     assert.equal(url.pathname, "/rest/v1/bookings");
     assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + token);
     // Only the target booking is read; overlap remains a database check.
-    if (init.method === "GET") return Response.json([{ ...body, booking_id: "b1", guest_id: user.id, status: "pending" }]);
+    if (init.method === "GET") return Response.json([{ ...body, booking_id: "b1", guest_id: user.id, nightly_price: 100, total_price: 200, status: "pending" }]);
     assert.ok(init.method === "POST" || init.method === "PATCH");
     writes.push(init.method!);
     return Response.json({ code: "23P01", message: "conflicting key contains private details", details: "Other guest booking" }, { status: 409 });

@@ -42,7 +42,7 @@ export default function BookingCreatedSummary({ bookingId }: { bookingId: string
 
   const { booking, property } = result;
   const title = property?.title || booking.deleted_property_title || "Your stay";
-  const preview = calculateBookingPreview(booking.check_in, booking.check_out, property?.price_per_night ?? 0);
+  const preview = calculateBookingPreview(booking.check_in, booking.check_out, booking.nightly_price);
   const formatDate = (date: string) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T00:00:00Z`));
   const formatPrice = (price: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(price);
   return <main className="booking-confirmation">
@@ -65,8 +65,8 @@ export default function BookingCreatedSummary({ bookingId }: { bookingId: string
           <div><dt>Guest name</dt><dd>{booking.guest_name}</dd></div>
           <div><dt>Email</dt><dd>{booking.guest_email}</dd></div>
         </dl>
-        {property && preview && <div className="confirmation-price"><div><span>Estimated total</span><strong>{formatPrice(preview.total)}</strong></div>
-          <p>{preview.nights} {preview.nights === 1 ? "night" : "nights"} × {formatPrice(property.price_per_night)} at the current nightly rate.</p></div>}
+        {preview && <div className="confirmation-price"><div><span>Booking total</span><strong>{formatPrice(booking.total_price)}</strong></div>
+          <p>{preview.nights} {preview.nights === 1 ? "night" : "nights"} × {formatPrice(booking.nightly_price)} at your saved nightly rate.</p></div>}
         <p className="confirmation-reference">Booking reference <span>{booking.booking_id}</span></p>
       </div>
     </section>

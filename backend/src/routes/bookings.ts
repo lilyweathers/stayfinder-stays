@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { requireAuth } from "../middleware/auth.js";
 import { bookingValidator } from "../validators/bookingValidator.js";
 import { bookingToday } from "../lib/booking-date.js";
+import { calculateBookingPrice } from "../lib/booking-price.js";
 import { checkBookingCapacity } from "../lib/booking-capacity.js";
 
 const bookingApp = new Hono({ strict: false });
@@ -55,10 +56,11 @@ bookingApp.post("/", bookingValidator, async (c) => {
     const bookingBody: NewBooking = c.req.valid("json");
     if (bookingBody.status && bookingBody.status !== "pending") return c.json({ error: "New bookings must be pending" }, 409);
     const capacityError = await checkBookingCapacity(supabase, bookingBody.property_id, bookingBody.guests);
-    if (capacityError) return c.json({ error: capacityError.error }, capacityError.status);
+    if ("error" in capacityError) return c.json({ error: capacityError.error }, capacityError.status);
+    const price = calculateBookingPrice(bookingBody.check_in, bookingBody.check_out, capacityError.nightly_price);
     const { data, error } = await supabase
       .from("bookings")
-      .insert({ ...bookingBody, guest_id: c.get("user")!.id, status: bookingBody.status ?? "pending" })
+      .insert({ ...bookingBody, ...price, guest_id: c.get("user")!.id, status: bookingBody.status ?? "pending" })
       .select("*")
       .single();
     if (error?.code === "23505") {
@@ -102,10 +104,11 @@ bookingApp.put("/:id", bookingValidator, async (c) => {
       return c.json({ error: "Booking status transition is not allowed" }, 409);
     }
     const capacityError = await checkBookingCapacity(supabase, bookingBody.property_id, bookingBody.guests);
-    if (capacityError) return c.json({ error: capacityError.error }, capacityError.status);
+    if ("error" in capacityError) return c.json({ error: capacityError.error }, capacityError.status);
+    const price = calculateBookingPrice(bookingBody.check_in, bookingBody.check_out, booking.nightly_price);
     const { data, error } = await supabase
       .from("bookings")
-      .update({ ...bookingBody, booking_id: id, status })
+      .update({ ...bookingBody, ...price, booking_id: id, status })
       .eq("booking_id", id)
       .eq("status", booking.status)
       .select("*")

@@ -214,3 +214,9 @@ would restore the older blanket cancelled-deletion restriction.
 ## VG5 time enforcement (022)
 
 Apply `022_booking_time.sql` after 021. This adds independent create/update checks for the Europe/Stockholm calendar-date policy while retaining historical records. Run `tests/time_rules.sql`; fixtures roll back. See `requests/time-live.md` at the repository root for API/direct-Supabase verification and midnight/DST boundaries. Earlier notes describing VG4 status enforcement as pending have been superseded by the verified criteria checklist.
+
+## VG6 trusted saved prices (023)
+
+Review `tests/price_preflight.sql` before applying `023_booking_price.sql` after 022. Legacy prices are initialized from the current stored property rate; unknown historical rates are not recoverable. Missing-property bookings stop the migration for review. The trigger independently computes prices and retains the saved nightly rate on updates. Run `tests/price.sql` and follow the repository-root `requests/price-live.md` live instructions.
+
+Apply `024_property_price_precision.sql` after 023 to ensure property nightly prices use numeric(14,2). This repairs schemas whose original property rate column was integer. Existing rates and saved booking totals remain unchanged. Run price tests after 024.

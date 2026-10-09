@@ -97,3 +97,9 @@ Database enforcement already exists in migrations 002, 006 and 012. Run the expa
 ### VG5 booking time rules
 
 Apply `database/022_booking_time.sql` after 021 and run `database/tests/time_rules.sql`. Follow [time verification instructions](requests/time-live.md) for the live runner and documented Europe/Stockholm calendar-date policy. Same-day check-in is allowed; past check-in and mutations of already-past bookings are rejected.
+
+### VG6 saved booking prices
+
+Review `database/tests/price_preflight.sql`, apply `database/023_booking_price.sql` after 022, and run `database/tests/price.sql`. [Price verification instructions](requests/price-live.md) explain legacy backfill and the live runner. New bookings save the current database nightly rate; date edits use that saved rate, and property price changes leave existing totals intact.
+
+VG6 also requires `database/024_property_price_precision.sql` before price tests, ensuring decimal property rates are supported on existing installations.

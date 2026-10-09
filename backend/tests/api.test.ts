@@ -84,12 +84,12 @@ test("booking CRUD uses Supabase", async (t) => {
     const auth = authResponse(input);
     if (auth) return auth;
     const url = new URL(String(input));
-    if (url.pathname === "/rest/v1/properties") return databaseRows([{ max_guests: 2 }], init);
+    if (url.pathname === "/rest/v1/properties") return databaseRows([{ max_guests: 2, price_per_night: 100 }], init);
     assert.equal(url.pathname, "/rest/v1/bookings");
     methods.push(init.method!);
     if (init.method === "POST") {
       const payload = JSON.parse(String(init.body));
-      assert.deepEqual(payload, { ...body, guest_id: user.id, status: "pending" });
+      assert.deepEqual(payload, { ...body, guest_id: user.id, nightly_price: 100, total_price: 200, status: "pending" });
       stored = { ...payload, booking_id: "generated-booking-id", status: "pending" };
       return databaseRows([stored], init);
     }
@@ -239,7 +239,7 @@ test("booking routes handle missing rows, database failures, and duplicate IDs",
   t.mock.method(globalThis, "fetch", async (_input: unknown, init: RequestInit) => {
     const auth = authResponse(_input);
     if (auth) return auth;
-    if (new URL(String(_input)).pathname === "/rest/v1/properties") return databaseRows([{ max_guests: 2 }], init);
+    if (new URL(String(_input)).pathname === "/rest/v1/properties") return databaseRows([{ max_guests: 2, price_per_night: 100 }], init);
     return errorCode ? Response.json({ code: errorCode, message: "Database error" }, { status: 400 }) : databaseRows([], init);
   });
   t.mock.method(console, "error", () => {});
