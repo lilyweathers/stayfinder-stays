@@ -52,6 +52,41 @@
 .stay-booking-record summary { cursor: pointer; }
 .stay-booking-record .booking-details { color: #222; margin-top: 16px; }
 .stay-booking-history { font-size: .8rem; color: #52636b; margin-bottom: 0; }
+.hosting-property-description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; color: #52636b; font-size: .9rem; line-height: 1.6; margin: 16px 0 0; }
+.hosting-property-facts { grid-template-columns: 1fr 1fr; margin-top: 16px; }
+.hosting-property-facts dd span { color: #52636b; font-size: .8rem; font-weight: normal; }
+.hosting-manage-link { padding: 10px 14px; font-size: .85rem; }
+.host-bookings-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; margin: 36px 0 24px; }
+.host-bookings-heading h3 { margin: 0; font-size: 1.3rem; letter-spacing: -.02em; }
+.host-bookings-heading p { margin: 8px 0 0; font-size: .9rem; color: #52636b; }
+.host-booking-card { padding: 26px; margin-bottom: 20px; border: 1px solid #dce5df; border-radius: 12px; background: white; box-shadow: 0 4px 18px rgba(23, 60, 58, .04); }
+.host-booking-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.host-booking-guest { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.host-booking-guest > div { min-width: 0; }
+.host-guest-avatar { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; background: #e6eee8; color: #35605b; font-weight: bold; }
+.host-booking-guest h4 { font-size: 1.1rem; margin: 0; overflow-wrap: anywhere; }
+.host-booking-guest p { margin: 5px 0 0; color: #52636b; font-size: .85rem; overflow-wrap: anywhere; }
+.host-booking-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; gap: 12px; margin-top: 20px; }
+.host-booking-controls .booking-actions { margin: 0; min-width: 0; }
+.host-booking-controls button { width: 100%; margin: 0; padding: 10px; font-size: .85rem; }
+.host-booking-controls .booking-actions > button + button { margin-top: 8px; }
+.host-booking-controls p { font-size: .8rem; color: #52636b; margin: 0 0 10px; }
+.host-booking-controls > p { grid-column: 1 / -1; }
+.host-booking-controls > .booking-actions:has(form) { grid-column: 1 / -1; background: #f2f6f3; padding: 20px; border-radius: 8px; }
+.host-booking-controls form { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: none; }
+.host-booking-controls form label { font-size: .85rem; min-width: 0; }
+.host-booking-controls input { width: 100%; min-width: 0; }
+.host-booking-record { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e9e7; }
+.host-booking-record .stay-booking-record { margin: 0; }
+.host-booking-record p { overflow-wrap: anywhere; }
+.host-bookings-empty { text-align: center; padding: 32px 24px; border: 1px dashed #b9cbc1; border-radius: 12px; background: #f2f6f3; }
+.host-bookings-empty h4 { margin: 0; font-size: 1.1rem; color: #35605b; }
+.host-bookings-empty p { margin: 12px auto 0; color: #52636b; font-size: .9rem; max-width: 450px; }
+@media (max-width: 600px) {
+  .host-booking-card { padding: 20px; }
+  .host-booking-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .host-booking-controls form { grid-template-columns: 1fr; }
+}
 .stay-booking-card a:focus-visible, .stay-booking-record summary:focus-visible { outline: 3px solid #d7a36c; outline-offset: 3px; }
 @media (max-width: 760px) {
   .stay-booking-card { grid-template-columns: 1fr; }

@@ -37,7 +37,8 @@ export default function MyPropertiesPage() {
     void load();
     return () => { active = false; };
   }, [attempt]);
-  return <main>
+  const formatPrice = (price: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(price);
+  return <main className="bookings-page my-properties-page">
     <div className="my-properties-heading">
       <div><h1>My Properties</h1><p>Manage your properties and their bookings.</p></div>
       {!loading && !error && !creating && properties.length > 0 && <button type="button" onClick={() => { setCreating(true); setNotice(""); }}>Add property</button>}
@@ -70,12 +71,24 @@ export default function MyPropertiesPage() {
       <p>Have a place you’d like to share? Add your first property, then manage its details and guest bookings here.</p>
       <button type="button" onClick={() => { setCreating(true); setNotice(""); }}>Add your first property <span aria-hidden="true">→</span></button>
     </section>}
-    {!loading && !error && properties.map(property => <article className="card account-property-card" key={property.property_id}>
-      <Link href={`/my-properties/${encodeURIComponent(property.property_id)}`}><PropertyImage src={property.image_url} title={property.title} /></Link>
-      <h2>{property.title}</h2>
-      <p>{property.location}</p>
-      <p>{property.price_per_night} per night · Up to {property.max_guests} guests</p>
-      <Link href={`/my-properties/${encodeURIComponent(property.property_id)}`}>Manage property</Link>
+    {!loading && !error && properties.length > 0 && <p className="bookings-count">{properties.length} {properties.length === 1 ? "property" : "properties"} in your portfolio</p>}
+    {!loading && !error && properties.map(property => <article className="stay-booking-card hosting-property-card" key={property.property_id}>
+      <Link className="stay-booking-photo" href={`/my-properties/${encodeURIComponent(property.property_id)}`}><PropertyImage src={property.image_url} title={property.title} /></Link>
+      <div className="stay-booking-content">
+        <div className="stay-booking-heading">
+          <div><h2>{property.title}</h2><p>{property.location}</p></div>
+          <span className="confirmation-status confirmation-status-confirmed">Your property</span>
+        </div>
+        <p className="hosting-property-description">{property.description}</p>
+        <dl className="stay-booking-dates hosting-property-facts">
+          <div><dt>Nightly rate</dt><dd>{formatPrice(property.price_per_night)} <span>per night</span></dd></div>
+          <div><dt>Capacity</dt><dd>Up to {property.max_guests} {property.max_guests === 1 ? "guest" : "guests"}</dd></div>
+        </dl>
+        <div className="stay-booking-footer">
+          <Link className="empty-state-link hosting-manage-link" href={`/my-properties/${encodeURIComponent(property.property_id)}`}>Manage property <span aria-hidden="true">→</span></Link>
+          <Link className="stay-summary-link" href={`/properties/${encodeURIComponent(property.property_id)}`}>View listing <span aria-hidden="true">↗</span></Link>
+        </div>
+      </div>
     </article>)}
   </main>;
 }
