@@ -52,6 +52,7 @@ bookingApp.post("/", bookingValidator, async (c) => {
   const supabase = c.get("supabase");
   try {
     const bookingBody: NewBooking = c.req.valid("json");
+    if (bookingBody.status && bookingBody.status !== "pending") return c.json({ error: "New bookings must be pending" }, 409);
     const capacityError = await checkBookingCapacity(supabase, bookingBody.property_id, bookingBody.guests);
     if (capacityError) return c.json({ error: capacityError.error }, capacityError.status);
     const { data, error } = await supabase
@@ -78,19 +79,40 @@ bookingApp.put("/:id", bookingValidator, async (c) => {
   try {
     const id = c.req.param("id");
     const bookingBody: NewBooking = c.req.valid("json");
+    const { data: booking, error: readError } = await supabase.from("bookings")
+      .select("*").eq("booking_id", id).maybeSingle();
+    if (readError?.code === "42501") return c.json({ error: "Booking access denied" }, 403);
+    if (readError) throw readError;
+    if (!booking) return c.json({ error: "Booking not found" }, 404);
+    const userId = c.get("user")!.id;
+    const status = bookingBody.status ?? booking.status;
+    if (booking.guest_id !== userId || (status === "confirmed" && status !== booking.status)) {
+      const { data: property, error: ownerError } = await supabase.from("properties")
+        .select("owner_id").eq("property_id", booking.property_id).maybeSingle();
+      if (ownerError) throw ownerError;
+      if (property?.owner_id !== userId) return c.json({ error: status === "confirmed" && status !== booking.status
+        ? "Only the property owner can confirm bookings" : "Booking access denied" }, 403);
+    }
+    if (booking.status === "cancelled") return c.json({ error: "Cancelled bookings cannot be edited" }, 409);
+    if (status !== booking.status && !(booking.status === "pending" && status === "confirmed")
+      && !(["pending", "confirmed"].includes(booking.status) && status === "cancelled")) {
+      return c.json({ error: "Booking status transition is not allowed" }, 409);
+    }
     const capacityError = await checkBookingCapacity(supabase, bookingBody.property_id, bookingBody.guests);
     if (capacityError) return c.json({ error: capacityError.error }, capacityError.status);
     const { data, error } = await supabase
       .from("bookings")
-      .update({ ...bookingBody, booking_id: id, status: bookingBody.status ?? "pending" })
+      .update({ ...bookingBody, booking_id: id, status })
       .eq("booking_id", id)
+      .eq("status", booking.status)
       .select("*")
       .maybeSingle();
     if (error?.code === "23P01") return c.json({ error: "This property is already booked for the selected dates. Choose different dates." }, 409);
     if (error?.code === "23514" && error.message === "Guest count exceeds property capacity") return c.json({ error: "The property's capacity has changed. Choose fewer guests and try again." }, 409);
     if (error?.code === "42501") return c.json({ error: "Booking access denied" }, 403);
+    if (error?.code === "23514") return c.json({ error: "This booking cannot be edited or its status changed" }, 409);
     if (error) throw error;
-    if (!data) return c.json({ error: "Booking not found" }, 404);
+    if (!data) return c.json({ error: "Booking changed. Refresh and try again." }, 409);
     return c.json(data);
   } catch (error) {
     console.error("Failed to update booking", error);

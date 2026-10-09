@@ -131,13 +131,13 @@ test("booking CRUD uses Supabase", async (t) => {
     body: JSON.stringify({
       ...body,
       booking_id: "attempted-id-change",
-      status: "confirmed",
+      status: "pending",
     }),
   });
   assert.equal(updateResponse.status, 200);
   const updated = (await updateResponse.json()) as Booking;
   assert.equal(updated.booking_id, created.booking_id);
-  assert.equal(updated.status, "confirmed");
+  assert.equal(updated.status, "pending");
 
   const deleteResponse = await request(`/bookings/${created.booking_id}`, {
     method: "DELETE",
@@ -146,7 +146,7 @@ test("booking CRUD uses Supabase", async (t) => {
 
   const missingResponse = await request(`/bookings/${created.booking_id}`);
   assert.equal(missingResponse.status, 404);
-  assert.deepEqual(methods, ["POST", "GET", "GET", "PATCH", "GET", "DELETE", "GET"]);
+  assert.deepEqual(methods, ["POST", "GET", "GET", "GET", "PATCH", "GET", "DELETE", "GET"]);
 });
 
 test("invalid booking input returns validation details", async (t) => {

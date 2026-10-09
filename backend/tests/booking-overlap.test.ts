@@ -18,7 +18,8 @@ test("create and update report database exclusion conflicts without exposing ano
     if (url.pathname === "/rest/v1/properties") return Response.json([{ max_guests: 2 }]);
     assert.equal(url.pathname, "/rest/v1/bookings");
     assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + token);
-    // No pre-read of other guests' rows: the database is the authoritative check.
+    // Only the target booking is read; overlap remains a database check.
+    if (init.method === "GET") return Response.json([{ ...body, booking_id: "b1", guest_id: user.id, status: "pending" }]);
     assert.ok(init.method === "POST" || init.method === "PATCH");
     writes.push(init.method!);
     return Response.json({ code: "23P01", message: "conflicting key contains private details", details: "Other guest booking" }, { status: 409 });

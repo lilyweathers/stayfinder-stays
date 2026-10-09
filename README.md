@@ -89,3 +89,7 @@ are templates until their features and final API contracts are implemented.
 ### VG3 booking capacity
 
 Apply migration `database/021_booking_capacity.sql` after 020, first checking `database/tests/capacity_preflight.sql`. Run rollback tests in `database/tests/capacity.sql`, then the live runner. Full instructions: [capacity verification](requests/capacity-live.md). Capacity comes from the saved property; upcoming active reservations prevent unsafe reductions.
+
+### VG4 booking status and roles
+
+Database enforcement already exists in migrations 002, 006 and 012. Run the expanded rollback test `database/tests/status_roles.sql` and the live runner using [status verification instructions](requests/status-live.md). General booking edits preserve saved status when omitted and check participant roles and allowed transitions.

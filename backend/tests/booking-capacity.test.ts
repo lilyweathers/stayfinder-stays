@@ -24,7 +24,9 @@ test("create/update use current database capacity and stop excessive or forged r
       assert.equal(url.searchParams.get("deleted_at"), "is.null");
       return Response.json([{ max_guests: capacity }]);
     }
-    assert.equal(url.pathname, "/rest/v1/bookings"); writes++;
+    assert.equal(url.pathname, "/rest/v1/bookings");
+    if (init.method === "GET") return Response.json([{ ...body, booking_id: "b1", guest_id: user.id, status: "pending" }]);
+    writes++;
     const row = { ...JSON.parse(String(init.body)), booking_id: "b1" };
     return Response.json(init.method === "POST" ? row : [row]);
   });
@@ -46,9 +48,10 @@ test("create/update use current database capacity and stop excessive or forged r
 test("missing properties and failed capacity reads do not issue writes", async (t) => {
   let failed = false;
   t.mock.method(console, "error", () => {});
-  t.mock.method(globalThis, "fetch", async (input: unknown) => {
+  t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
     const url = new URL(String(input));
     if (url.pathname === "/auth/v1/user") return Response.json(user);
+    if (url.pathname === "/rest/v1/bookings") return Response.json([{ ...body, booking_id: "b1", guest_id: user.id, status: "pending" }]);
     assert.equal(url.pathname, "/rest/v1/properties");
     return failed ? Response.json({ code: "XX000", message: "Failed" }, { status: 500 }) : Response.json([]);
   });
@@ -59,9 +62,10 @@ test("missing properties and failed capacity reads do not issue writes", async (
 });
 
 test("database capacity changes after precheck become clear conflicts", async (t) => {
-  t.mock.method(globalThis, "fetch", async (input: unknown) => {
+  t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
     const path = new URL(String(input)).pathname;
     if (path === "/auth/v1/user") return Response.json(user);
+    if (path === "/rest/v1/bookings" && init.method === "GET") return Response.json([{ ...body, booking_id: "b1", guest_id: user.id, status: "pending" }]);
     if (path === "/rest/v1/properties") return Response.json([{ max_guests: 2 }]);
     return Response.json({ code: "23514", message: "Guest count exceeds property capacity" }, { status: 400 });
   });
