@@ -59,9 +59,15 @@ export default function BookingsPage() {
   const visibleBookings = availableBookings.filter(booking =>
     (!propertyId || booking.property_id === propertyId) && (!status || booking.status === status),
   );
+  const formatDate = (value: string) => {
+    const date = new Date(`${value}T00:00:00Z`);
+    return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-GB", {
+      day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
+    }).format(date);
+  };
 
   return (
-    <main>
+    <main className="bookings-page">
       <div className="my-properties-heading">
         <div><h1>Bookings</h1><p>Your upcoming stays and booking history.</p><p>Hosting guests? Manage their bookings under <Link href="/my-properties">My Properties</Link>.</p></div>
         {!loading && !needsLogin && !error && <button type="button" onClick={retry}>Refresh bookings</button>}
@@ -90,7 +96,7 @@ export default function BookingsPage() {
             <Link className="empty-state-link" href="/properties">Find your next stay <span aria-hidden="true">→</span></Link>
           </section>
         ) : <>
-          <div className="booking-filters">
+          <div className="booking-filters bookings-toolbar">
             <label>Property
               <select value={propertyId} onChange={event => setPropertyId(event.target.value)}>
                 <option value="">All booked properties</option>
@@ -106,30 +112,38 @@ export default function BookingsPage() {
               </select>
             </label>
           </div>
-          <p role="status">Showing {visibleBookings.length} of {bookings.length} bookings</p>
+          <p className="bookings-count" role="status">Showing {visibleBookings.length} of {bookings.length} bookings</p>
           {visibleBookings.length === 0 && <p>No bookings match these filters.</p>}
           {visibleBookings.map(booking => {
             const property = propertyById.get(booking.property_id);
             return (
-              <article className="card account-property-card" key={booking.booking_id}>
-                {property && <Link href={`/properties/${encodeURIComponent(property.property_id)}`}><PropertyImage src={property.image_url} title={property.title} /></Link>}
-                <h2>{property?.title || booking.deleted_property_title || (propertiesLoaded ? "Deleted property" : `Property ${booking.property_id}`)}</h2>
-                {property && <p>{property.location}</p>}
-                <dl className="booking-details">
-                  <dt>Guest</dt><dd>{booking.guest_name}</dd>
-                  <dt>Email</dt><dd>{booking.guest_email}</dd>
-                  <dt>Check-in</dt><dd><time dateTime={booking.check_in}>{booking.check_in}</time></dd>
-                  <dt>Check-out</dt><dd><time dateTime={booking.check_out}>{booking.check_out}</time></dd>
-                  <dt>Guests</dt><dd>{booking.guests}</dd>
-                  <dt>Status</dt><dd>{booking.status}</dd>
-                  <dt>Booking reference</dt><dd>{booking.booking_id}</dd>
-                </dl>
-                {property ? <Link href={`/properties/${encodeURIComponent(booking.property_id)}`}>View property</Link>
-                  : propertiesLoaded && <p>This property has been deleted. This booking is retained for your records.</p>}
-                {(property || !propertiesLoaded) && <CancelBookingButton booking={booking} onCancelled={updated => {
-                  setBookings(current => current.map(item => item.booking_id === updated.booking_id ? updated : item));
-                  setNotice("Booking cancelled successfully.");
-                }} />}
+              <article className="stay-booking-card" key={booking.booking_id}>
+                {property ? <Link className="stay-booking-photo" href={`/properties/${encodeURIComponent(property.property_id)}`}><PropertyImage src={property.image_url} title={property.title} /></Link>
+                  : <div className="stay-booking-photo stay-booking-photo-missing"><span>{propertiesLoaded ? "Stay saved in your history" : "Photo unavailable"}</span></div>}
+                <div className="stay-booking-content">
+                  <div className="stay-booking-heading">
+                    <div><h2>{property?.title || booking.deleted_property_title || (propertiesLoaded ? "Deleted property" : `Property ${booking.property_id}`)}</h2>
+                      {property && <p>{property.location}</p>}</div>
+                    <span className={`confirmation-status confirmation-status-${booking.status}`}>{booking.status === "pending" ? "Awaiting confirmation" : booking.status === "confirmed" ? "Confirmed" : "Cancelled"}</span>
+                  </div>
+                  <dl className="stay-booking-dates">
+                    <div><dt>Check-in</dt><dd><time dateTime={booking.check_in}>{formatDate(booking.check_in)}</time></dd></div>
+                    <div><dt>Check-out</dt><dd><time dateTime={booking.check_out}>{formatDate(booking.check_out)}</time></dd></div>
+                    <div><dt>Guests</dt><dd>{booking.guests} {booking.guests === 1 ? "guest" : "guests"}</dd></div>
+                  </dl>
+                  <div className="stay-booking-footer">
+                    <Link className="stay-summary-link" href={`/bookings/${encodeURIComponent(booking.booking_id)}/created`}>View booking summary <span aria-hidden="true">→</span></Link>
+                    {(property || !propertiesLoaded) && <CancelBookingButton booking={booking} onCancelled={updated => {
+                      setBookings(current => current.map(item => item.booking_id === updated.booking_id ? updated : item));
+                      setNotice("Booking cancelled successfully.");
+                    }} />}
+                  </div>
+                  <details className="stay-booking-record"><summary>Guest details and booking reference</summary>
+                    <dl className="booking-details"><dt>Guest</dt><dd>{booking.guest_name}</dd><dt>Email</dt><dd>{booking.guest_email}</dd>
+                      <dt>Booking reference</dt><dd>{booking.booking_id}</dd></dl>
+                  </details>
+                  {!property && propertiesLoaded && <p className="stay-booking-history">This property has been deleted. This booking is retained for your records.</p>}
+                </div>
               </article>
             );
           })}

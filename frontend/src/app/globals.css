@@ -25,6 +25,46 @@
 .calendar-help { font-size: .8rem; color: #52636b; margin: 12px 0 0; }
 .calendar-clear { margin-top: 12px; padding: 6px 0; border: 0; background: transparent; color: #155e75; font-size: .85rem; text-decoration: underline; }
 
+.bookings-page { max-width: 1120px; }
+.bookings-toolbar { padding: 20px; gap: 16px; background: #f2f6f3; border: 1px solid #dce5df; border-radius: 10px; }
+.bookings-toolbar label { flex: 1; min-width: 180px; color: #52636b; font-size: .85rem; }
+.bookings-toolbar select { width: 100%; border-color: #cbd8d2; color: #222; }
+.bookings-count { margin: 20px 0; font-size: .85rem; color: #52636b; }
+.stay-booking-card { display: grid; grid-template-columns: 260px minmax(0, 1fr); border: 1px solid #dce5df; border-radius: 12px; background: white; overflow: hidden; margin-bottom: 24px; box-shadow: 0 4px 18px rgba(23, 60, 58, .04); }
+.stay-booking-photo { display: block; min-height: 260px; background: #e6eee8; }
+.stay-booking-photo .property-image { height: 100%; aspect-ratio: auto; border-radius: 0; margin: 0; min-height: 260px; }
+.stay-booking-photo-missing { display: grid; place-items: center; padding: 24px; text-align: center; color: #52636b; font-size: .9rem; }
+.stay-booking-content { min-width: 0; padding: 26px; }
+.stay-booking-heading { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: flex-start; gap: 12px; }
+.stay-booking-heading h2 { margin: 0; font-size: 1.35rem; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.stay-booking-heading p { margin: 6px 0 0; color: #52636b; font-size: .9rem; }
+.stay-booking-dates { display: grid; grid-template-columns: 1fr 1fr auto; gap: 16px; padding: 20px 0; margin: 20px 0 0; border-top: 1px solid #e5e9e7; border-bottom: 1px solid #e5e9e7; }
+.stay-booking-dates dt { color: #52636b; font-size: .75rem; margin-bottom: 8px; }
+.stay-booking-dates dd { margin: 0; font-size: .95rem; font-weight: bold; line-height: 1.5; }
+.stay-booking-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
+.stay-summary-link { display: inline-flex; align-items: center; gap: 12px; font-size: .9rem; font-weight: bold; text-decoration: none; }
+.stay-summary-link:hover { text-decoration: underline; }
+.stay-booking-footer .booking-actions { margin: 0; }
+.stay-booking-footer .booking-actions button { padding: 9px 12px; font-size: .85rem; margin: 0; }
+.stay-booking-footer .booking-actions button + button { margin-left: 8px; }
+.stay-booking-footer .booking-actions p, .stay-booking-footer > p { font-size: .8rem; color: #52636b; margin: 0 0 8px; }
+.stay-booking-record { margin-top: 20px; font-size: .8rem; color: #52636b; }
+.stay-booking-record summary { cursor: pointer; }
+.stay-booking-record .booking-details { color: #222; margin-top: 16px; }
+.stay-booking-history { font-size: .8rem; color: #52636b; margin-bottom: 0; }
+.stay-booking-card a:focus-visible, .stay-booking-record summary:focus-visible { outline: 3px solid #d7a36c; outline-offset: 3px; }
+@media (max-width: 760px) {
+  .stay-booking-card { grid-template-columns: 1fr; }
+  .stay-booking-photo, .stay-booking-photo .property-image { min-height: 0; height: 210px; }
+}
+@media (max-width: 480px) {
+  .stay-booking-content { padding: 20px; }
+  .stay-booking-dates { grid-template-columns: 1fr 1fr; }
+  .stay-booking-footer { align-items: flex-start; flex-direction: column; }
+  .bookings-toolbar { padding: 16px; }
+  .bookings-toolbar label { min-width: 0; flex-basis: 100%; }
+}
+
 .booking-confirmation { max-width: 780px; padding-top: 40px; padding-bottom: 64px; }
 .confirmation-heading { text-align: center; border: 0; background: transparent; margin-bottom: 32px; }
 .confirmation-icon { width: 60px; height: 60px; margin: 0 auto 20px; display: grid; place-items: center; border-radius: 50%; background: #e6eee8; color: #35605b; font-size: 2rem; }
