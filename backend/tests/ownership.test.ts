@@ -19,6 +19,7 @@ test("creation derives ownership from Auth verification rather than cached sessi
   t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
     const url = new URL(String(input));
     if (url.pathname === "/auth/v1/user") return Response.json(verifiedUser);
+    if (url.pathname === "/rest/v1/properties" && init.method === "GET") return Response.json([{ max_guests: 2 }]);
     assert.equal(init.method, "POST");
     assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + token);
     const body = JSON.parse(String(init.body));
@@ -42,6 +43,7 @@ test("RLS-hidden bookings stay inaccessible across all single-booking routes usi
   t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
     const url = new URL(String(input));
     if (url.pathname === "/auth/v1/user") return Response.json(user);
+    if (url.pathname === "/rest/v1/properties") return Response.json([{ max_guests: 2 }]);
     assert.equal(url.pathname, "/rest/v1/bookings");
     assert.equal(url.searchParams.get("booking_id"), "eq.hidden");
     assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + token);
@@ -90,8 +92,9 @@ test("API property mutations constrain owner and denied rows remain hidden", asy
 });
 
 test("API translates database ownership rejection to 403", async (t) => {
-  t.mock.method(globalThis, "fetch", async (input: unknown) => {
+  t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
     if (new URL(String(input)).pathname === "/auth/v1/user") return Response.json(user);
+    if (new URL(String(input)).pathname === "/rest/v1/properties" && init.method === "GET") return Response.json([{ max_guests: 2 }]);
     return Response.json({ code: "42501", message: "Ownership denied" }, { status: 403 });
   });
   assert.equal((await request("/properties", "POST", property)).status, 403);

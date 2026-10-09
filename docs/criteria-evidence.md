@@ -789,3 +789,15 @@ Frontend route type generation, TypeScript, ESLint, and production build pass.
 The production output includes /bookings/[id]/created. This change needs no new
 SQL migration. Browser redirect and summary visual confirmation remain pending;
 the earlier user confirmation covers the availability calendar itself.
+
+### VG3 capacity implementation prepared - 2026-10-09
+
+API booking creation and updates query the active property?s current saved max_guests using the authenticated user client. Strict request validation rejects forged capacity fields. Oversized requests return a clear 400; database capacity changes after the precheck return a clear 409. Migration 021 adds database triggers checking positive whole guest counts and saved capacity, using a property SHARE lock to coordinate concurrent capacity changes. Unsafe reductions below pending/confirmed upcoming reservations return 409. Cancellation and unchanged historical maintenance remain possible. No existing records are modified.
+
+All 55 backend tests and TypeScript checks passed. Coverage includes exact/oversized counts, changed capacity, forged fields, missing properties, database errors and mutation race errors. The live runner passes syntax validation. Hosted SQL and live requests have not run; VG3 remains unchecked. Follow requests/capacity-live.md for preflight, migration, rollback tests and disposable API/direct-Supabase verification.
+
+### VG3 hosted verification complete - 2026-10-09
+
+User confirmed the capacity preflight, migration 021 and rollback SQL tests passed. The capacity live runner then passed all 22 checks against the current API and hosted Supabase using separate host and guest test sessions. Exactly max_guests was accepted; max_guests + 1 was rejected on API create/update and direct Supabase create/update (23514). Forged max_guests and capacity request fields were rejected. Failed updates preserved the saved guest count. Reducing capacity below an upcoming reservation was rejected with 409; after reducing the reservation guest count, the capacity change succeeded and both API/database respected the new limit. Increasing capacity allowed the new maximum. Cancellation allowed capacity reduction. All disposable bookings and properties were removed and runner sessions logged out locally.
+
+Together with the 55 passing backend tests and TypeScript checks, this completes VG3. No additional browser or concurrent-capacity live checks are claimed.

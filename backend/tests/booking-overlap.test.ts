@@ -15,6 +15,7 @@ test("create and update report database exclusion conflicts without exposing ano
   t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
     const url = new URL(String(input));
     if (url.pathname === "/auth/v1/user") return Response.json(user);
+    if (url.pathname === "/rest/v1/properties") return Response.json([{ max_guests: 2 }]);
     assert.equal(url.pathname, "/rest/v1/bookings");
     assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + token);
     // No pre-read of other guests' rows: the database is the authoritative check.

@@ -85,3 +85,7 @@ Use the [submission checklist](docs/submission.md) and the
 [API request template](requests/stayfinder.http). Read the
 [request instructions](requests/README.md) before running cases. Planned tests
 are templates until their features and final API contracts are implemented.
+
+### VG3 booking capacity
+
+Apply migration `database/021_booking_capacity.sql` after 020, first checking `database/tests/capacity_preflight.sql`. Run rollback tests in `database/tests/capacity.sql`, then the live runner. Full instructions: [capacity verification](requests/capacity-live.md). Capacity comes from the saved property; upcoming active reservations prevent unsafe reductions.

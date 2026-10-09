@@ -84,6 +84,7 @@ test("booking CRUD uses Supabase", async (t) => {
     const auth = authResponse(input);
     if (auth) return auth;
     const url = new URL(String(input));
+    if (url.pathname === "/rest/v1/properties") return databaseRows([{ max_guests: 2 }], init);
     assert.equal(url.pathname, "/rest/v1/bookings");
     methods.push(init.method!);
     if (init.method === "POST") {
@@ -235,9 +236,12 @@ test("booking routes handle missing rows, database failures, and duplicate IDs",
     check_out: "2026-10-12", guests: 2,
   };
   let errorCode: string | undefined;
-  t.mock.method(globalThis, "fetch", async (_input: unknown, init: RequestInit) => authResponse(_input) ?? (errorCode
-    ? Response.json({ code: errorCode, message: "Database error" }, { status: 400 })
-    : databaseRows([], init)));
+  t.mock.method(globalThis, "fetch", async (_input: unknown, init: RequestInit) => {
+    const auth = authResponse(_input);
+    if (auth) return auth;
+    if (new URL(String(_input)).pathname === "/rest/v1/properties") return databaseRows([{ max_guests: 2 }], init);
+    return errorCode ? Response.json({ code: errorCode, message: "Database error" }, { status: 400 }) : databaseRows([], init);
+  });
   t.mock.method(console, "error", () => {});
   for (const method of ["GET", "PUT", "DELETE"]) {
     const options = method === "PUT"

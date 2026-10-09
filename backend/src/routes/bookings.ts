@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { requireAuth } from "../middleware/auth.js";
 import { bookingValidator } from "../validators/bookingValidator.js";
+import { checkBookingCapacity } from "../lib/booking-capacity.js";
 
 const bookingApp = new Hono({ strict: false });
 bookingApp.use("*", requireAuth);
@@ -51,6 +52,8 @@ bookingApp.post("/", bookingValidator, async (c) => {
   const supabase = c.get("supabase");
   try {
     const bookingBody: NewBooking = c.req.valid("json");
+    const capacityError = await checkBookingCapacity(supabase, bookingBody.property_id, bookingBody.guests);
+    if (capacityError) return c.json({ error: capacityError.error }, capacityError.status);
     const { data, error } = await supabase
       .from("bookings")
       .insert({ ...bookingBody, guest_id: c.get("user")!.id, status: bookingBody.status ?? "pending" })
@@ -60,6 +63,7 @@ bookingApp.post("/", bookingValidator, async (c) => {
       return c.json({ error: "Booking ID already exists" }, 409);
     }
     if (error?.code === "23P01") return c.json({ error: "This property is already booked for the selected dates. Choose different dates." }, 409);
+    if (error?.code === "23514" && error.message === "Guest count exceeds property capacity") return c.json({ error: "The property's capacity has changed. Choose fewer guests and try again." }, 409);
     if (error?.code === "42501") return c.json({ error: "Booking access denied" }, 403);
     if (error) throw error;
     return c.json(data, 201);
@@ -74,6 +78,8 @@ bookingApp.put("/:id", bookingValidator, async (c) => {
   try {
     const id = c.req.param("id");
     const bookingBody: NewBooking = c.req.valid("json");
+    const capacityError = await checkBookingCapacity(supabase, bookingBody.property_id, bookingBody.guests);
+    if (capacityError) return c.json({ error: capacityError.error }, capacityError.status);
     const { data, error } = await supabase
       .from("bookings")
       .update({ ...bookingBody, booking_id: id, status: bookingBody.status ?? "pending" })
@@ -81,6 +87,7 @@ bookingApp.put("/:id", bookingValidator, async (c) => {
       .select("*")
       .maybeSingle();
     if (error?.code === "23P01") return c.json({ error: "This property is already booked for the selected dates. Choose different dates." }, 409);
+    if (error?.code === "23514" && error.message === "Guest count exceeds property capacity") return c.json({ error: "The property's capacity has changed. Choose fewer guests and try again." }, 409);
     if (error?.code === "42501") return c.json({ error: "Booking access denied" }, 403);
     if (error) throw error;
     if (!data) return c.json({ error: "Booking not found" }, 404);

@@ -84,6 +84,7 @@ propertiesApp.post("/", requireAuth, propertyValidator, async (c) => {
       .select("*")
       .single();
     if (error?.code === "42501") return c.json({ error: "Property access denied" }, 403);
+    if (error?.code === "23514" && error.message === "Property capacity is below an upcoming booking") return c.json({ error: "Cannot reduce capacity below the guest count of an upcoming booking." }, 409);
     if (error) throw error;
     return c.json(data, 201);
   } catch (error) {
@@ -105,6 +106,7 @@ propertiesApp.patch("/:id", requireAuth, partialPropertyValidator, async (c) => 
       .select("*")
       .maybeSingle();
     if (error?.code === "42501") return c.json({ error: "Property access denied" }, 403);
+    if (error?.code === "23514" && error.message === "Property capacity is below an upcoming booking") return c.json({ error: "Cannot reduce capacity below the guest count of an upcoming booking." }, 409);
     if (error) throw error;
     if (!data) return c.json({ error: "Property not found" }, 404);
     return c.json(data);
@@ -126,6 +128,7 @@ propertiesApp.put("/:id", requireAuth, propertyValidator, async (c) => {
       .eq("owner_id", c.get("user")!.id)
       .select("*")
       .maybeSingle();
+    if (error?.code === "23514" && error.message === "Property capacity is below an upcoming booking") return c.json({ error: "Cannot reduce capacity below the guest count of an upcoming booking." }, 409);
     if (error) throw error;
     if (!data) return c.json({ error: "Property not found" }, 404);
     return c.json(data);
