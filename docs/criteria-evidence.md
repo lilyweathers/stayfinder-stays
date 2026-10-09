@@ -202,7 +202,50 @@ test@gmail.com. The user confirmed the summary query worked after being given
 expected counts of 1 matching account, 6 original properties found/assigned,
 0 unassigned properties, 4 total bookings/assigned, and 0 unassigned bookings.
 The summary result itself was not supplied as an export or screenshot.
-VG1 remains unchecked pending live creation ownership assignment, booking mutation permissions, and unrelated-user booking isolation checks.
+VG1 remains unchecked pending live creation ownership assignment, booking mutation permissions, and unrelated-user API booking isolation checks. The later direct Supabase unrelated-account read check below verifies database read isolation for the tested existing booking.
+
+### VG1 automated coverage and live runner - 2026-10-09
+
+Added API regression checks proving creation uses the Auth-verified user rather
+than the cached session identity, and that all single-booking routes return 404
+for RLS-hidden rows while forwarding the user's token. All 48 backend tests and
+the backend TypeScript check pass. These tests mock Supabase responses.
+
+Prepared backend/scripts/verify-ownership-live.mjs and requests/ownership-live.md
+for the remaining hosted checks using two distinct accounts, separate cookies,
+and disposable fixtures. The runner's syntax check passes. The hosted run
+subsequently passed as recorded below, completing the pending VG1 verification.
+
+### VG1 hosted API ownership verification - 2026-10-09
+
+Ran `node --import tsx scripts/verify-ownership-live.mjs` from backend against
+the configured hosted Supabase project. The runner served the current Hono source
+on an ephemeral loopback port and used actual HTTP requests, two confirmed test
+accounts, separate cookie stores, and the normal publishable/anon key. No mocked
+database or admin client was used. The sandboxed attempt failed at login before
+any writes; the approved network-enabled run passed all 36 HTTP checks.
+
+- Property/booking creation returned 201 and owner_id/guest_id matched each
+  account's verified /auth/me identity.
+- Spoofed ownership fields returned 400. Nonowner property PATCH returned 404;
+  owner PATCH returned 200. Guest/host property booking lists returned 403/200.
+- Guest and host booking edits returned 200, preserving guest identity. Guest
+  confirmation returned 403; host confirmation returned 200. Guest and host
+  cancellation returned 200. Participant deletion succeeded.
+- On a second property owned by the guest account, the other account was
+  unrelated to both property and booking. Its list excluded the booking even
+  with a spoofed guest_id query, its property-booking list returned 403, and
+  single-record GET, PUT, DELETE, confirm, and cancel returned 404.
+- Participant reads before and after the denied mutations were identical.
+  Moving the booking to the first property returned 403 and left it unchanged.
+- All three disposable bookings and both properties were deleted; the runner
+  reported cleanup complete and exited successfully. Existing records were
+  not modified. These are API/database checks, not additional browser evidence.
+
+Credentials were moved from requests/ownership-live.md into the gitignored
+requests/local/ownership-accounts.json, and documentation placeholders restored.
+Together with the earlier direct database and browser evidence and the passing
+48-test backend suite, this completes VG1. Earlier pending VG1 notes are superseded.
 
 ### Frontend foundation and data-source verification - 2026-10-08
 

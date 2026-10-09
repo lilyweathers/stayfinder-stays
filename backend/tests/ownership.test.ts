@@ -14,6 +14,48 @@ function request(path: string, method: string, body?: unknown) {
   return app.request(path, { method, headers: { Cookie: cookie, "Content-Type": "application/json" }, ...(body ? { body: JSON.stringify(body) } : {}) });
 }
 
+test("creation derives ownership from Auth verification rather than cached session identity", async (t) => {
+  const verifiedUser = { ...user, id: "verified-user" };
+  t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
+    const url = new URL(String(input));
+    if (url.pathname === "/auth/v1/user") return Response.json(verifiedUser);
+    assert.equal(init.method, "POST");
+    assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + token);
+    const body = JSON.parse(String(init.body));
+    if (url.pathname === "/rest/v1/properties") {
+      assert.equal(body.owner_id, verifiedUser.id);
+      return Response.json({ ...body, property_id: "created-property" });
+    }
+    assert.equal(url.pathname, "/rest/v1/bookings");
+    assert.equal(body.guest_id, verifiedUser.id);
+    return Response.json({ ...body, booking_id: "created-booking" });
+  });
+  const propertyResponse = await request("/properties", "POST", property);
+  assert.equal(propertyResponse.status, 201);
+  assert.equal((await propertyResponse.json()).owner_id, verifiedUser.id);
+  const bookingResponse = await request("/bookings", "POST", { ...booking, check_in: "2099-01-01", check_out: "2099-01-03" });
+  assert.equal(bookingResponse.status, 201);
+  assert.equal((await bookingResponse.json()).guest_id, verifiedUser.id);
+});
+
+test("RLS-hidden bookings stay inaccessible across all single-booking routes using the user's token", async (t) => {
+  t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
+    const url = new URL(String(input));
+    if (url.pathname === "/auth/v1/user") return Response.json(user);
+    assert.equal(url.pathname, "/rest/v1/bookings");
+    assert.equal(url.searchParams.get("booking_id"), "eq.hidden");
+    assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + token);
+    return Response.json([]);
+  });
+  for (const [path, method, body] of [
+    ["/bookings/hidden", "GET", undefined],
+    ["/bookings/hidden", "PUT", { ...booking, check_in: "2099-01-01", check_out: "2099-01-03" }],
+    ["/bookings/hidden", "DELETE", undefined],
+    ["/bookings/hidden/cancel", "POST", undefined],
+    ["/bookings/hidden/confirm", "POST", undefined],
+  ] as const) assert.equal((await request(path, method, body)).status, 404);
+});
+
 test("API rejects forged ownership fields before issuing database writes", async (t) => {
   t.mock.method(globalThis, "fetch", async (input: unknown) => {
     assert.equal(new URL(String(input)).pathname, "/auth/v1/user");
