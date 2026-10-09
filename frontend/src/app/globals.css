@@ -72,7 +72,7 @@
 .confirmation-heading h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); letter-spacing: -.03em; }
 .confirmation-heading > p:last-child { max-width: 480px; margin: 12px auto 0; color: #52636b; }
 .confirmation-card { background: #fff; border: 1px solid #dce5df; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 24px rgba(23, 60, 58, .04); }
-.confirmation-card > .property-image { aspect-ratio: 16 / 6; max-height: 260px; margin: 0; border-radius: 0; }
+.confirmation-card > .property-image { width: 100%; height: clamp(180px, 33vw, 260px); aspect-ratio: auto; margin: 0; border-radius: 0; }
 .confirmation-card-content { padding: 28px; }
 .confirmation-property { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: flex-start; padding-bottom: 24px; border-bottom: 1px solid #e5e9e7; }
 .confirmation-property h2 { margin: 0; font-size: 1.45rem; overflow-wrap: anywhere; }
@@ -147,7 +147,7 @@ textarea { font: inherit; padding: 12px; border: 1px solid #888; border-radius: 
 
 .property-image { position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 6px; background: #e8eef0; display: grid; place-items: center; color: #52636b; margin-bottom: 20px; }
 .property-image img { object-fit: cover; }
-.property-image-detail { aspect-ratio: 16 / 9; max-height: 480px; }
+.property-image-detail { width: 100%; height: clamp(200px, 51vw, 480px); aspect-ratio: auto; }
 
 .home-page { max-width: 1120px; padding-top: 32px; }
 .home-hero { position: relative; isolation: isolate; overflow: hidden; border-radius: 16px; min-height: 520px; display: flex; align-items: center; background: #173c3a; color: white; }
