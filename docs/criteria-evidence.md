@@ -719,3 +719,73 @@ user-facing conflict contract remains 409. No database rule was weakened.
 Together with the 49-test backend suite, TypeScript check, and user-confirmed SQL
 tests, this completes VG2. These are API/database checks, not additional browser
 UI evidence. Credentials remain in the ignored local account file.
+
+### Booking calendar with disabled unavailable dates - 2026-10-09
+
+Added frontend/src/components/BookingDatePicker.tsx and frontend/src/lib/availability.ts
+to the creation form. The calendar uses keyboard-accessible date buttons, grey
+disabled past/occupied dates, separate check-in/check-out selection, month navigation,
+and a clear action. Checkout is exclusive, so the next booking's check-in can be
+selected as departure. Checkout options that cross any blocked night are disabled.
+Date selections continue to support preview totals and the login-preserved draft.
+
+Prepared migration 020 and GET /properties/:id/availability to expose only upcoming
+pending/confirmed date ranges through a restricted security-definer RPC. Private
+booking rows and guest information remain protected by unchanged RLS. The client
+refreshes availability on focus, every minute, and after successful/conflicting
+booking writes. Loading/errors disable the calendar and submission; stale selected
+ranges show an error. VG2's database constraint still guards concurrent changes.
+
+All 51 backend tests pass, including public endpoint/no-store and missing/error cases.
+Four frontend date-rule tests cover boundaries, blocked intervals, invalid dates,
+cross-month refresh, leap years, and year rollover. Backend/frontend TypeScript and
+frontend ESLint pass. Hosted migration 020 and its rollback-only SQL tests are
+pending. Browser preview could not run because the browser automation kernel failed
+to start; visual/interactive verification remains pending.
+
+### Hosted calendar availability verification - 2026-10-09
+
+The user confirmed migration 020 and database/tests/property_availability.sql
+passed. This is user-reported SQL evidence; no SQL result export was supplied.
+Ran backend/scripts/verify-availability-live.mjs against the configured hosted
+Supabase project using the current Hono source on an ephemeral loopback port,
+actual HTTP requests, separate host/guest cookie stores, and the normal
+publishable/anon key. No admin client or mocked database was used.
+
+All 13 checks passed: empty property returns []; pending and confirmed bookings
+expose exactly check_in/check_out to anonymous users; the direct anonymous
+Supabase RPC returns the same date-only payload; anonymous booking-detail reads
+remain 401; cancellation frees dates; and missing properties return 404.
+Availability responses carry no-store. The disposable booking/property were
+deleted and the runner exited zero; existing records were untouched.
+
+Earlier pending migration/SQL/API notes are superseded. Browser automation was
+retried after resetting its kernel and failed to start again, so visual and
+interactive browser confirmation remains pending. The date rules, backend and
+frontend typechecks, frontend lint, 51 backend tests, and four date-rule tests
+passed as recorded above.
+
+### Booking creation summary page - 2026-10-09
+
+The user confirmed the availability calendar works and supplied a screenshot
+of the post-booking form. The screenshot showed the cleared form remaining in
+checkout mode with all calendar days disabled, followed by the creation message.
+Successful creation now replaces that route with /bookings/:id/created using
+the booking ID returned by the API. The form displays a brief success/navigation
+state instead of clearing back to the calendar; a fallback summary link is shown.
+An immediate submission guard and disabled success state prevent double clicks.
+
+Added BookingCreatedSummary and the new dynamic route. The page fetches the saved
+booking through the existing authenticated/RLS-protected endpoint, so refreshing
+the page works without trusting a query-string payload or local cached booking.
+It shows property image/name/location when available, check-in/out, nights, guest
+count/contact information, status, booking reference, and an estimated total at
+the current nightly rate. Pending requests are explicitly awaiting host confirmation;
+creation is not presented as host approval. Missing properties retain the saved
+title and booking details. Loading, sign-in, missing/inaccessible, retry states,
+and links to bookings/property/browse are provided.
+
+Frontend route type generation, TypeScript, ESLint, and production build pass.
+The production output includes /bookings/[id]/created. This change needs no new
+SQL migration. Browser redirect and summary visual confirmation remain pending;
+the earlier user confirmation covers the availability calendar itself.

@@ -1,4 +1,5 @@
 import type { ProfilePhotoInput } from "@/lib/profile-photo";
+import type { UnavailableRange } from "@/lib/availability";
 import type { ApiErrorResponse, AuthResponse, RegisterResponse, PublicProfile } from "@/types/api";
 import type { Booking, NewBooking } from "@/types/booking";
 import type { Property, PropertyInput, PropertyFilters, PropertyHost } from "@/types/property";
@@ -39,6 +40,7 @@ export const createProperty = (property: PropertyInput) => request<Property>("/p
 });
 export const deleteProperty = (id: string) => request<{ message: string; property: Property; cancelled_bookings: number }>(`/properties/${encodeURIComponent(id)}`, { method: "DELETE" });
 export const getPropertyHost = (id: string) => request<PropertyHost>(`/properties/${encodeURIComponent(id)}/host`);
+export const getPropertyAvailability = (id: string) => request<UnavailableRange[]>(`/properties/${encodeURIComponent(id)}/availability`);
 export const getProperty = (id: string) => request<Property>(`/properties/${encodeURIComponent(id)}`);
 export const updateProperty = (id: string, property: PropertyInput) => request<Property>(`/properties/${encodeURIComponent(id)}`, {
   method: "PATCH", body: JSON.stringify(property),
@@ -47,6 +49,7 @@ export const updateBooking = (id: string, booking: NewBooking & { status: Bookin
   method: "PUT", body: JSON.stringify(booking),
 });
 export const getBookings = () => request<Booking[]>("/bookings");
+export const getBooking = (id: string) => request<Booking>(`/bookings/${encodeURIComponent(id)}`);
 export const getPropertyBookings = (id: string) => request<Booking[]>(`/bookings?property_id=${encodeURIComponent(id)}`);
 export const confirmBooking = (id: string) => request<Booking>(`/bookings/${encodeURIComponent(id)}/confirm`, { method: "POST" });
 export const deleteBooking = (id: string) => request<Booking>(`/bookings/${encodeURIComponent(id)}`, { method: "DELETE" });

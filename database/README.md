@@ -1,5 +1,27 @@
 # Database changes
 
+## Booking calendar availability
+
+Apply `020_property_availability.sql` after 019, then run
+`tests/property_availability.sql` in Supabase SQL Editor. The rollback-only test
+checks public date ranges, pending/confirmed blockers, cancelled/expired exclusions,
+missing/empty properties, cancellation refresh, and continued booking-row privacy.
+
+`GET /properties/:id/availability` exposes only upcoming blocked date ranges.
+Its restricted security-definer function reads across booking RLS without
+returning booking IDs, guests, emails, ownership, or status. Existing booking
+policies and the VG2 exclusion constraint remain unchanged.
+
+The creation form uses a custom calendar because native date inputs cannot disable
+individual booked dates. Past/booked nights are greyed out; checkout may equal
+the next booking's check-in, but ranges cannot cross blocked nights. Availability
+is refreshed every minute, on window focus, and after successful/conflicting writes.
+Loading/error states disable date selection and booking, with a retry action.
+The database remains authoritative if availability changes between selection and
+submission. On 2026-10-09 the user confirmed migration 020 and its SQL tests passed;
+all 13 live API/direct-RPC checks passed with disposable fixture cleanup complete.
+Browser visual/interactive verification remains pending.
+
 ## VG2 overlap protection
 
 Apply `019_booking_overlap.sql` after the existing migrations through 018, as

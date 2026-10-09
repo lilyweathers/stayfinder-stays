@@ -48,6 +48,7 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      get_property_availability: { Args: { p_property_id: string }; Returns: { check_in: string; check_out: string }[] | null };
       get_public_profile: { Args: { p_user_id: string }; Returns: PublicProfileRow | null };
       get_property_host: { Args: { p_property_id: string }; Returns: PropertyHost | null };
       delete_property: { Args: { p_property_id: string }; Returns: DeletePropertyResult | null };

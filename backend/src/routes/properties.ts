@@ -33,6 +33,16 @@ propertiesApp.get("/", propertyFilterValidator, async (c) => {
   }
 });
 
+propertiesApp.get("/:id/availability", async (c) => {
+  const { data, error } = await c.get("supabase").rpc("get_property_availability", { p_property_id: c.req.param("id") });
+  if (error) {
+    console.error("Failed to read property availability", error);
+    return c.json({ error: "Could not load available dates. Please try again." }, 503);
+  }
+  if (data === null) return c.json({ error: "Property not found" }, 404);
+  return c.json(data);
+});
+
 propertiesApp.get("/:id/host", async (c) => {
   const { data, error } = await c.get("supabase").rpc("get_property_host", { p_property_id: c.req.param("id") });
   if (error) {
