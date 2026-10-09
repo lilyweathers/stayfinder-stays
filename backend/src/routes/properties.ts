@@ -11,7 +11,20 @@ const propertiesApp = new Hono({ strict: false });
 propertiesApp.get("/", propertyFilterValidator, async (c) => {
   const supabase = c.get("supabase");
   try {
-    const { location, max_price, guests, sort } = c.req.valid("query");
+    const { location, max_price, guests, sort, check_in, check_out } = c.req.valid("query");
+    if (check_in && check_out) {
+      const { data, error } = await supabase.rpc("search_available_properties", {
+        p_check_in: check_in, p_check_out: check_out,
+        ...(location ? { p_location: location } : {}),
+        ...(max_price !== undefined ? { p_max_price: max_price } : {}),
+        ...(guests !== undefined ? { p_guests: guests } : {}),
+        ...(sort ? { p_sort: sort } : {}),
+      });
+      if (error?.code === "23514" || error?.code === "22007" || error?.code === "22008")
+        return c.json({ error: "Check your search dates and filters, then try again." }, 400);
+      if (error) throw error;
+      return c.json(data);
+    }
     let query = supabase.from("properties").select("*").is("deleted_at", null);
     if (location) {
       // Treat SQL wildcard characters in the search text literally.

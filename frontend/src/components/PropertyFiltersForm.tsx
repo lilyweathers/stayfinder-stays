@@ -22,6 +22,8 @@ export default function PropertyFiltersForm({ filters }: { filters: PropertyFilt
         step="any" placeholder="Any price" defaultValue={filters.max_price} /></label>
       <label>Guests<input name="guests" type="number" min={1} step={1}
         placeholder="Any guest count" defaultValue={filters.guests} /></label>
+      <label>Check-in<input name="check_in" type="date" defaultValue={filters.check_in} /></label>
+      <label>Check-out<input name="check_out" type="date" defaultValue={filters.check_out} /></label>
       <label>Sort by price<select name="sort" defaultValue={filters.sort}>
         <option value="">Default order</option>
         <option value="asc">Lowest price first</option>
@@ -29,6 +31,7 @@ export default function PropertyFiltersForm({ filters }: { filters: PropertyFilt
       </select></label>
       <button type="submit">Apply filters</button>
       <Link href="/properties" onClick={clearFields}>Clear filters</Link>
+      <p>Choose both dates to find available stays. Check-out can be the day another stay begins.</p>
     </form>
   );
 }

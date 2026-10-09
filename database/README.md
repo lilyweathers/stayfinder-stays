@@ -220,3 +220,7 @@ Apply `022_booking_time.sql` after 021. This adds independent create/update chec
 Review `tests/price_preflight.sql` before applying `023_booking_price.sql` after 022. Legacy prices are initialized from the current stored property rate; unknown historical rates are not recoverable. Missing-property bookings stop the migration for review. The trigger independently computes prices and retains the saved nightly rate on updates. Run `tests/price.sql` and follow the repository-root `requests/price-live.md` live instructions.
 
 Apply `024_property_price_precision.sql` after 023 to ensure property nightly prices use numeric(14,2). This repairs schemas whose original property rate column was integer. Existing rates and saved booking totals remain unchanged. Run price tests after 024.
+
+## VG7 public availability search (025)
+
+Apply `025_available_property_search.sql` after 024. The public scoped RPC returns only property rows while testing booking overlaps across guest RLS. It validates dates/filters and combines availability with filtering and sorting. Run `tests/available_search.sql` and follow repository-root `requests/search-live.md`.

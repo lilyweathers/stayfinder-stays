@@ -103,3 +103,7 @@ Apply `database/022_booking_time.sql` after 021 and run `database/tests/time_rul
 Review `database/tests/price_preflight.sql`, apply `database/023_booking_price.sql` after 022, and run `database/tests/price.sql`. [Price verification instructions](requests/price-live.md) explain legacy backfill and the live runner. New bookings save the current database nightly rate; date edits use that saved rate, and property price changes leave existing totals intact.
 
 VG6 also requires `database/024_property_price_precision.sql` before price tests, ensuring decimal property rates are supported on existing installations.
+
+### VG7 available-date property search
+
+Apply `database/025_available_property_search.sql` after 024 and run `database/tests/available_search.sql`. Follow [search verification instructions](requests/search-live.md) for live checks. Optional check-in/check-out dates combine with all property filters and both price sorts, using VG2?s adjacent-stay convention.

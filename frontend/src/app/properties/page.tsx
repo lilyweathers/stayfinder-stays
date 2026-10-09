@@ -15,8 +15,9 @@ export default async function PropertiesPage({ searchParams }: {
   const filters: PropertyFilters = {
     location: value("location"), max_price: value("max_price"), guests: value("guests"),
     sort: value("sort"),
+    check_in: value("check_in"), check_out: value("check_out"),
   };
-  const filtered = [filters.location, filters.max_price, filters.guests].some(value => value?.trim());
+  const filtered = [filters.location, filters.max_price, filters.guests, filters.check_in, filters.check_out].some(value => value?.trim());
   let properties: Property[] = [];
   let error = "";
   try {
@@ -34,7 +35,7 @@ export default async function PropertiesPage({ searchParams }: {
     </div> : <>
       <p role="status">{properties.length} {properties.length === 1 ? "property" : "properties"} found</p>
       <PropertyList properties={properties} emptyMessage={filtered
-        ? "No properties match your filters. Try a different location, price, or guest count."
+        ? "No properties match your search. Try different dates, location, price, or guest count."
         : "No properties available yet."} />
     </>}
   </main>;

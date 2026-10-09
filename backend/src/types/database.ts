@@ -1,4 +1,4 @@
-// Application-facing public schema after migrations 001?024.
+// Application-facing public schema after migrations 001?025.
 // Maintained from the repository SQL and API fields; update with schema changes.
 export type BookingStatus = "pending" | "confirmed" | "cancelled";
 
@@ -50,6 +50,7 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      search_available_properties: { Args: { p_check_in: string; p_check_out: string; p_location?: string; p_max_price?: number; p_guests?: number; p_sort?: string }; Returns: PropertyRow[] };
       get_property_availability: { Args: { p_property_id: string }; Returns: { check_in: string; check_out: string }[] | null };
       get_public_profile: { Args: { p_user_id: string }; Returns: PublicProfileRow | null };
       get_property_host: { Args: { p_property_id: string }; Returns: PropertyHost | null };
