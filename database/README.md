@@ -1,5 +1,26 @@
 # Database changes
 
+## VG2 overlap protection
+
+Apply `019_booking_overlap.sql` after the existing migrations through 018, as
+administrator in Supabase SQL Editor. First run `tests/overlap_preflight.sql`:
+both result sets should be empty. If existing active bookings overlap or have
+invalid intervals, review those IDs before applying; the migration aborts rather
+than modifying/cancelling existing bookings. Run `ROLLBACK` after any failure.
+
+Migration 019 normalizes check_in/check_out to native PostgreSQL dates, rejects
+missing/empty/reversed intervals, and adds a partial GiST exclusion constraint
+for pending/confirmed bookings on the same property. Its `[check_in, check_out)`
+range permits adjacent stays. Cancelled bookings do not block dates. The database
+constraint applies independently of RLS visibility and protects concurrent writes.
+PostgreSQL exclusion failures (`23P01`) become a clear HTTP 409 on API create/update.
+
+Run `tests/overlap.sql` for rollback-only database checks, then use
+[the live overlap runner](../requests/overlap-live.md) to verify API behavior and
+simultaneous API/direct Supabase writes. On 2026-10-09 the user confirmed preflight,
+migration, and SQL tests passed; all 31 live checks subsequently passed with fixture
+cleanup complete. See docs/criteria-evidence.md for the observed results.
+
 Use the existing development Supabase/PostgreSQL project. This folder is
 reserved for versioned SQL describing its schema, constraints, and policies.
 No database changes have been applied by the repository preparation steps.

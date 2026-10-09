@@ -657,3 +657,65 @@ requests are made by these assertions. Backend source/test compilation, all
 30 runtime backend tests, frontend route type generation, TypeScript, and
 ESLint passed. G16 is complete. No database migration or browser action is
 needed for this typing change.
+
+### VG2 overlap implementation prepared - 2026-10-09
+
+Code: backend/src/routes/bookings.ts, backend/tests/booking-overlap.test.ts,
+database/019_booking_overlap.sql, database/tests/overlap_preflight.sql,
+database/tests/overlap.sql, backend/scripts/verify-overlap-live.mjs, and
+requests/overlap-live.md.
+
+The API translates PostgreSQL exclusion violations (23P01) into HTTP 409 with
+clear date-conflict feedback and does not disclose conflicting booking details.
+It delegates detection to the database so another guest's RLS-hidden booking
+cannot bypass the rule. The prepared migration normalizes the date columns to
+native dates, rejects invalid intervals, and adds a GiST exclusion constraint
+on property_id plus [check_in, check_out) for pending/confirmed bookings only.
+Checkout is exclusive; cancelled bookings do not block dates. Existing invalid
+or overlapping records abort migration without automatic edits/deletions.
+
+All 49 backend tests pass, including create/update 409 translation and privacy
+assertions; backend TypeScript and live-runner syntax checks pass. These API
+tests mock Supabase. Local database execution was unavailable because Docker's
+daemon is not running. Hosted migration application, rollback-only SQL cases,
+and the live runner have not yet run; VG2 remains unchecked.
+
+The live runner uses the existing ignored VG1 test-account file, actual HTTP
+requests, separate account cookies, and the normal publishable/anon key. It
+checks overlap shapes, hidden blockers, adjacent/unchanged dates, status behavior,
+different properties, failed-update persistence, and simultaneous creates via
+both Hono and direct Supabase. Each race must persist exactly one active booking.
+Only disposable records created during the run are cleaned up.
+
+### VG2 hosted verification complete - 2026-10-09
+
+The user confirmed the requested preflight, migration 019, and rollback-only
+database tests passed. This is user-reported SQL evidence; no SQL export was
+supplied. The earlier pending notes are superseded by this and the live run below.
+
+Ran backend/scripts/verify-overlap-live.mjs against the configured hosted Supabase
+project using the current Hono source on an ephemeral loopback port, actual HTTP
+requests, two distinct verified accounts, and the normal publishable/anon key.
+No mocked database or admin client was used. All 31 live checks passed:
+
+- Exact, contained, enclosing, and both edge overlaps against an RLS-hidden
+  pending booking returned API HTTP 409 with the clear conflict message.
+- Adjacent stays on both boundaries returned 201; unchanged booking dates
+  updated successfully with 200. Identical dates on another property were allowed.
+- Overlapping API updates returned 409; direct Supabase updates returned
+  400/23P01. The participant's stored row was identical before/after denied writes.
+- Confirmed bookings blocked dates; cancellation freed the same dates.
+- Simultaneous API creates returned one 201 and one 409. Simultaneous direct
+  Supabase creates returned one 201 and one 400/23P01. Host reads verified exactly
+  one active booking persisted for each tested race.
+- All disposable bookings/properties were cleaned up; the runner exited zero.
+  Existing properties/bookings were not modified.
+
+The first live attempt stopped because the runner incorrectly expected direct
+PostgREST exclusion errors to return 409. Its fixtures were cleaned up, the
+assertion was corrected to 400/23P01, and the complete rerun passed. Hono's
+user-facing conflict contract remains 409. No database rule was weakened.
+
+Together with the 49-test backend suite, TypeScript check, and user-confirmed SQL
+tests, this completes VG2. These are API/database checks, not additional browser
+UI evidence. Credentials remain in the ignored local account file.

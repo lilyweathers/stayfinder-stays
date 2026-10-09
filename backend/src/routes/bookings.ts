@@ -59,6 +59,7 @@ bookingApp.post("/", bookingValidator, async (c) => {
     if (error?.code === "23505") {
       return c.json({ error: "Booking ID already exists" }, 409);
     }
+    if (error?.code === "23P01") return c.json({ error: "This property is already booked for the selected dates. Choose different dates." }, 409);
     if (error?.code === "42501") return c.json({ error: "Booking access denied" }, 403);
     if (error) throw error;
     return c.json(data, 201);
@@ -79,6 +80,7 @@ bookingApp.put("/:id", bookingValidator, async (c) => {
       .eq("booking_id", id)
       .select("*")
       .maybeSingle();
+    if (error?.code === "23P01") return c.json({ error: "This property is already booked for the selected dates. Choose different dates." }, 409);
     if (error?.code === "42501") return c.json({ error: "Booking access denied" }, 403);
     if (error) throw error;
     if (!data) return c.json({ error: "Booking not found" }, 404);
