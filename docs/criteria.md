@@ -2,11 +2,11 @@
 
 Target: all G1–G16 and all VG1–VG7. The assignment requires all G criteria and at least four VG criteria for VG; this project selects all seven.
 
-## Current status (2026-10-08)
+## Current status (2026-10-10)
 
 - **G criteria: 16/16 complete.**
-- **VG criteria: all seven selected; completion remains tracked below.**
-- Latest checks: 32 backend tests pass; backend/frontend TypeScript and frontend ESLint pass.
+- **VG criteria: 7/7 complete.**
+- Latest recorded checks: 66 backend tests pass; backend/frontend TypeScript, frontend ESLint, and frontend production build pass.
 - Detailed milestones and verification records are in [criteria-evidence.md](criteria-evidence.md). Mocked API tests do not establish PostgreSQL enforcement; browser and hosted database results are identified separately.
 
 ## G checklist
@@ -51,21 +51,21 @@ behavior must be backed by database enforcement or database queries as appropria
 - Validate real calendar dates and require checkout after check-in. “Today” uses Europe/Stockholm; same-day check-in is allowed.
 - Keep cancellation and deletion separate. Past bookings are protected; hosts may delete current/future cancelled bookings under migration 012.
 - Property/account deletion removes owned properties, cancels upcoming active bookings, and retains booking history under migration 011.
-- Frontend totals are estimates. Trusted saved pricing, capacity enforcement, and available-date search remain VG work. Overlap enforcement in migration 019 is verified against the hosted database.
-- Overlap convention: [check_in, check_out), allowing adjacent stays. Settle price recalculation and capacity-reduction rules during VG implementation.
+- Frontend totals are estimates. Database enforcement and live checks verify trusted saved pricing, capacity, overlap protection, and available-date search.
+- Overlap convention: [check_in, check_out), allowing adjacent stays. Date edits use the booking's saved nightly rate; unsafe capacity reductions below upcoming active bookings are blocked.
 
 ## Remaining work
 
-1. Complete and verify the seven selected VG criteria, including direct database and concurrent-write checks where relevant.
-2. Complete submission requests showing successful, rejected, and boundary cases for each selected criterion.
-3. Record new results in [criteria-evidence.md](criteria-evidence.md) and update the corresponding checklist only after full verification.
+1. Finalize the submission request file with successful, rejected, and boundary cases for every selected VG criterion, using the verified live scripts and results as references.
+2. Update outdated request documentation and PLANNED labels to match the final API contract.
+3. Rehearse the app demonstration and explanations together for the 8–10 minute review.
 
 ## Submission and oral review
 
 - [x] Repository covering backend and frontend: [stayfinder-stays](https://github.com/lilyweathers/stayfinder-stays).
-- [ ] Final list of fulfilled criteria with supporting evidence.
+- [x] Final list of fulfilled criteria with supporting evidence: G1–G16 and VG1–VG7 above, with verification records in [criteria-evidence.md](criteria-evidence.md).
 - [ ] API request file covering successful and rejected calls, including every selected VG rule.
-- [ ] Complete database permission/constraint verification beyond mocked API tests.
+- [x] Complete database permission/constraint verification beyond mocked API tests: recorded direct Supabase checks, user-confirmed SQL tests, and concurrent overlap checks in [criteria-evidence.md](criteria-evidence.md).
 - [ ] Rehearse the app demonstration and explanations for the 8–10 minute review.
 
 Be ready to explain authentication versus authorization, session cookies, direct database protection, and why each rule belongs in the API, database, or both. Explain the code in your own words.
