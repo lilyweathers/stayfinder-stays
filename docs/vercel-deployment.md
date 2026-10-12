@@ -6,10 +6,10 @@ Live projects:
 
 These projects were initially deployed with the Vercel CLI. Their project root
 directories are now configured as `frontend` and `backend` for Git deployment.
-To enable automatic production deployments on pushes to `main`, install the
-Vercel GitHub app for `lilyweathers/stayfinder-stays`, then connect this repository
-in each project's Git settings. Installation authorization is still pending;
-automatic deployment on push is not enabled yet.
+Both projects are connected to `lilyweathers/stayfinder-stays` through the Vercel
+GitHub app. Automatic deployments are enabled: pushes to `main` deploy to
+production, while other branches create preview deployments. Production
+environment variables are already configured in Vercel.
 
 Create two Vercel projects from this repository. Supabase remains the database
 and authentication provider; apply the database migrations through 025 first.
