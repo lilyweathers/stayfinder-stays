@@ -1,6 +1,7 @@
 -- Apply after 024. Public search sees availability across guest RLS without
 -- returning booking identities, guest details or individual booking records.
 BEGIN;
+-- Vg7: Funktionen söker tillgänglighet över boknings-RLS utan att lämna ut gästers bokningsuppgifter.
 CREATE FUNCTION public.search_available_properties(
  p_check_in date, p_check_out date, p_location text DEFAULT NULL,
  p_max_price numeric DEFAULT NULL, p_guests bigint DEFAULT NULL, p_sort text DEFAULT NULL)
@@ -18,15 +19,18 @@ BEGIN
   OR (p_sort IS NOT NULL AND p_sort NOT IN ('asc', 'desc')) THEN
   RAISE EXCEPTION 'Invalid property search filters' USING ERRCODE = '23514';
  END IF;
- RETURN QUERY SELECT p.* FROM public.properties p
+ -- Vg7: Kombinera plats, högsta pris och gästkapacitet med datumvillkoren i samma fråga.
+  RETURN QUERY SELECT p.* FROM public.properties p
  WHERE p.deleted_at IS NULL
   AND (p_location IS NULL OR strpos(lower(p.location), lower(p_location)) > 0)
   AND (p_max_price IS NULL OR p.price_per_night <= p_max_price)
   AND (p_guests IS NULL OR p.max_guests >= p_guests)
+  -- Vg7: Uteslut överlapp med pending/confirmed. Cancelled blockerar inte; angränsande vistelser går bra.
   AND NOT EXISTS (SELECT 1 FROM public.bookings b
    WHERE b.property_id = p.property_id AND b.status IN ('pending', 'confirmed')
     AND b.check_in < p_check_out AND b.check_out > p_check_in)
- ORDER BY CASE WHEN p_sort = 'asc' THEN p.price_per_night END ASC,
+ -- Vg7: Sortera efter valt prisläge och sedan ID för en konsekvent ordning.
+  ORDER BY CASE WHEN p_sort = 'asc' THEN p.price_per_night END ASC,
   CASE WHEN p_sort = 'desc' THEN p.price_per_night END DESC, p.property_id ASC;
 END;
 $$;

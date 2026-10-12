@@ -11,6 +11,8 @@ const cookie = "sb-test-auth-token=base64-" + Buffer.from(JSON.stringify(session
 const body = { property_id: "p1", guest_name: "Guest", guest_email: user.email, check_in: "2099-01-01", check_out: "2099-01-03", guests: 1 };
 
 test("create and update report database exclusion conflicts without exposing another guest's booking", async (t) => {
+  // Vg2: Simulera överlappningsfelet vid skapande och redigering.
+  // Kontrollera att svaret blir 409 och inte innehåller privata databasdetaljer.
   const writes: string[] = [];
   t.mock.method(globalThis, "fetch", async (input: unknown, init: RequestInit) => {
     const url = new URL(String(input));

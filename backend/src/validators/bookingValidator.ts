@@ -13,6 +13,8 @@ const dateField = (label: string) => z.string({ error: label + " date is require
   .refine(value => value === "" || isCalendarDate(value), label + " must be a real date in YYYY-MM-DD format");
 
 export const bookingSchema = z.object({
+  // Vg1: guest_id ingår inte i tillåtna fält. strict() avvisar försök
+  // att skicka detta fält; backend hämtar identiteten från den verifierade sessionen.
   property_id: z.string({ error: "Property ID is required" }).trim().min(1, "Property ID is required"),
   guest_name: z.string({ error: "Guest name is required" }).trim().min(1, "Guest name is required"),
   guest_email: z.string({ error: "Guest email is required" }).trim().pipe(z.email("Enter a valid guest email address")),
@@ -27,7 +29,9 @@ export const bookingSchema = z.object({
   total_price: z.unknown().optional(),
   nightly_price: z.unknown().optional(),
   price_per_night: z.unknown().optional(),
+// Vg6: Klientens prisfält plockas bort; backend och databasen bestämmer det sparade priset.
 }).strict().transform(({ total_price: _total, nightly_price: _nightly, price_per_night: _rate, ...booking }) => booking).superRefine((booking, context) => {
+  // Vg5: Validera mot dagens datum i Stockholm och kräv att utcheckning sker efter incheckning.
   const today = bookingToday();
   if (isCalendarDate(booking.check_in) && booking.check_in < today) {
     context.addIssue({ code: "custom", path: ["check_in"], message: "Check-in cannot be in the past" });

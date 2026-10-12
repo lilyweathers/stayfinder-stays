@@ -15,6 +15,7 @@ END $$;
 ALTER TABLE public.properties ADD CONSTRAINT properties_valid_capacity
   CHECK (max_guests IS NOT NULL AND max_guests >= 1 AND max_guests = trunc(max_guests));
 
+-- Vg3: Triggern kontrollerar gästantalet även vid direkta Supabase-anrop som kringgår API:et.
 CREATE FUNCTION public.enforce_booking_capacity()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 DECLARE capacity numeric;
@@ -36,6 +37,7 @@ BEGIN
   END IF;
   -- SHARE conflicts with property capacity updates; regular booking writes may
   -- share this lock. The lookup runs across RLS but reveals no private data.
+  -- Vg3: Lås boenderaden med FOR SHARE så att kapaciteten inte ändras under bokningskontrollen.
   SELECT p.max_guests INTO capacity FROM public.properties p
     WHERE p.property_id = NEW.property_id AND p.deleted_at IS NULL FOR SHARE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Active property not found' USING ERRCODE = '23503'; END IF;
@@ -49,6 +51,7 @@ REVOKE ALL ON FUNCTION public.enforce_booking_capacity() FROM PUBLIC, anon, auth
 CREATE TRIGGER enforce_booking_capacity BEFORE INSERT OR UPDATE ON public.bookings
   FOR EACH ROW EXECUTE FUNCTION public.enforce_booking_capacity();
 
+-- Vg3: Ägaren får inte sänka kapaciteten under gästantalet i en kommande aktiv bokning.
 CREATE FUNCTION public.protect_property_capacity()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 BEGIN

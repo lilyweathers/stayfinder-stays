@@ -18,6 +18,7 @@ const filterSchema = z.object({
     .transform(Number).pipe(z.number().int().positive("Guest count must be at least 1")
       .max(Number.MAX_SAFE_INTEGER)).optional()),
 }).superRefine((filters, context) => {
+  // Vg7: Utan datum visas vanlig boendesökning; med datum krävs ett komplett och giltigt intervall.
   if (!filters.check_in && !filters.check_out) return;
   for (const field of ["check_in", "check_out"] as const) {
     const value = filters[field];

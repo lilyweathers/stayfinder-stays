@@ -65,6 +65,8 @@ function body(actor, property, start, end) {
     guests: 1, check_in: start, check_out: end };
 }
 async function race(label, property, start, end, raw) {
+  // Vg2: Två bokningar skickas parallellt för samma boende och datum.
+  // Kontrollera att bara en lyckas, både via API:et och direkt via Supabase.
   const results = await Promise.all(Object.values(actors).map(actor => raw
     ? direct(actor, "POST", { ...body(actor, property, start, end), guest_id: actor.id })
     : api(actor, "/bookings", "POST", body(actor, property, start, end))));

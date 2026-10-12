@@ -1,5 +1,6 @@
 -- Apply after 002 and 004. Enforce confirmation through every write path.
 BEGIN;
+-- Vg4: Kontrollera startstatus, tillåtna statusbyten och ägarens rätt att bekräfta i databasen.
 CREATE OR REPLACE FUNCTION public.protect_booking_status_roles()
 RETURNS trigger LANGUAGE plpgsql SET search_path = '' AS $$
 BEGIN
@@ -14,6 +15,7 @@ BEGIN
           RAISE EXCEPTION 'Only the property owner can confirm bookings' USING ERRCODE = '42501';
         END IF;
       ELSIF OLD.status IN ('pending', 'confirmed') AND NEW.status = 'cancelled' THEN
+        -- Vg4: RLS kräver gäst eller ägare; separata triggers stoppar gamla och redan avbokade bokningar.
         -- Participant RLS checks who may cancel; 004 checks past/cancelled rows.
         NULL;
       ELSE

@@ -13,6 +13,7 @@ propertiesApp.get("/", propertyFilterValidator, async (c) => {
   try {
     const { location, max_price, guests, sort, check_in, check_out } = c.req.valid("query");
     if (check_in && check_out) {
+      // Vg7: Sök med datum och övriga filter i en databasfunktion som ser alla blockerande bokningar.
       const { data, error } = await supabase.rpc("search_available_properties", {
         p_check_in: check_in, p_check_out: check_out,
         ...(location ? { p_location: location } : {}),
@@ -91,6 +92,8 @@ propertiesApp.post("/", requireAuth, propertyValidator, async (c) => {
   try {
     const propertyBody: NewProperty = c.req.valid("json");
     const { title, description, location, price_per_night, max_guests, image_url } = propertyBody;
+    // Vg1: Backend anger den verifierade användaren som ägare.
+    // Klienten får inte bestämma owner_id när ett boende skapas.
     const { data, error } = await supabase
       .from("properties")
       .insert({ title, description, location, price_per_night, max_guests, ...(image_url !== undefined ? { image_url } : {}), owner_id: user.id })
@@ -111,6 +114,8 @@ propertiesApp.patch("/:id", requireAuth, partialPropertyValidator, async (c) => 
   try {
     const id = c.req.param("id");
     const propertyBody: Partial<NewProperty> = c.req.valid("json");
+    // Vg1: Både boendets ID och ägarens ID måste matcha för att ändringen
+    // ska genomföras. RLS kontrollerar dessutom ägarskapet i databasen.
     const { data, error } = await supabase
       .from("properties")
       .update({ ...propertyBody, property_id: id })
@@ -130,6 +135,7 @@ propertiesApp.patch("/:id", requireAuth, partialPropertyValidator, async (c) => 
 });
 
 propertiesApp.put("/:id", requireAuth, propertyValidator, async (c) => {
+  // Vg1: Även PUT begränsar uppdateringen till den inloggade ägarens boende.
   const supabase = c.get("supabase");
   try {
     const id = c.req.param("id");
@@ -152,6 +158,8 @@ propertiesApp.put("/:id", requireAuth, propertyValidator, async (c) => {
 });
 
 propertiesApp.delete("/:id", requireAuth, async (c) => {
+  // Vg1: Databasfunktionen delete_property kontrollerar ägarskapet innan
+  // boendet tas bort, även om någon anropar funktionen direkt via Supabase.
   const supabase = c.get("supabase");
   try {
     const { data, error } = await supabase.rpc("delete_property", { p_property_id: c.req.param("id")! });

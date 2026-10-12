@@ -1,5 +1,6 @@
 -- Apply after 011. Hosts may delete cancelled bookings only before check-in passes.
 BEGIN;
+-- Vg4: Databasens avbokningsskydd gäller även om klienten kringgår frontend och API.
 CREATE OR REPLACE FUNCTION public.protect_booking_cancellation()
 RETURNS trigger LANGUAGE plpgsql SET search_path = '' AS $$
 BEGIN

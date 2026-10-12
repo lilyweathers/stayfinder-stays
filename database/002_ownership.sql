@@ -25,11 +25,14 @@ END;
 $$;
 
 ALTER TABLE public.properties ENABLE ROW LEVEL SECURITY;
+-- Vg1: RLS kontrollerar åtkomsten i databasen även vid direkta klientanrop.
+-- auth.uid() hämtar användarens ID från den autentiserade anropets identitet.
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY properties_select_public ON public.properties
   FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY properties_insert_owner ON public.properties
+  -- Ett nytt boende måste tillhöra användaren som gör anropet.
   FOR INSERT TO authenticated WITH CHECK (owner_id = (SELECT auth.uid()));
 CREATE POLICY properties_update_owner ON public.properties
   FOR UPDATE TO authenticated USING (owner_id = (SELECT auth.uid()))
@@ -39,6 +42,7 @@ CREATE POLICY properties_delete_owner ON public.properties
 
 -- A guest sees their own bookings; a host sees all bookings for their property.
 CREATE POLICY bookings_select_participant ON public.bookings
+  -- Bokningen är synlig för dess gäst eller ägaren till det bokade boendet.
   FOR SELECT TO authenticated USING (
     guest_id = (SELECT auth.uid()) OR EXISTS (
       SELECT 1 FROM public.properties p
@@ -70,6 +74,9 @@ CREATE POLICY bookings_delete_participant ON public.bookings
 -- RLS validates rows, but participants must not transfer ownership or move a
 -- booking to another host's property. Administrators can backfill legacy rows.
 CREATE OR REPLACE FUNCTION public.protect_stayfinder_ownership()
+-- Vg1: Triggerfunktionen körs före INSERT och UPDATE. Den hindrar vanliga
+-- användare från att förfalska ägarskap, byta identitetsfält eller flytta
+-- en befintlig bokning till ett annat boende. Administratörer kan hantera historik.
 RETURNS trigger LANGUAGE plpgsql SET search_path = '' AS $$
 BEGIN
   IF current_user IN ('anon', 'authenticated') THEN

@@ -29,6 +29,10 @@ END $$;
 ALTER TABLE public.bookings ADD CONSTRAINT bookings_valid_interval
   CHECK (check_in IS NOT NULL AND check_out IS NOT NULL AND check_out > check_in);
 ALTER TABLE public.bookings ADD CONSTRAINT bookings_no_active_overlap
+  -- Vg2: Regeln stoppar överlapp vid skapande och ändring, även vid samtidiga anrop.
+  -- Samma property_id och överlappande datum (&&) får inte förekomma tillsammans.
+  -- '[)' inkluderar incheckning men utesluter utcheckning: 10–14 och 14–16 går bra.
+  -- Endast pending och confirmed blockerar datum; cancelled omfattas inte.
   EXCLUDE USING gist (
     property_id WITH =,
     daterange(check_in, check_out, '[)') WITH &&

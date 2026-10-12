@@ -28,6 +28,7 @@ ALTER TABLE public.bookings ALTER COLUMN nightly_price SET NOT NULL,
     AND total_price >= 0 AND total_price <= 90071992547409.91
     AND total_price = (check_out - check_in) * nightly_price);
 
+-- Vg6: Triggern ersätter klientens pris med betrodda värden före varje INSERT eller UPDATE.
 CREATE FUNCTION public.save_booking_price()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 DECLARE rate numeric;
@@ -43,8 +44,10 @@ BEGIN
  ELSE
   -- Preserve the booking's rate across property changes, cancellation, history
   -- maintenance and date edits. Neither API nor direct writes may replace it.
+  -- Vg6: Behåll det ursprungliga nattpriset när boendets pris eller bokningens datum ändras.
   NEW.nightly_price := OLD.nightly_price;
  END IF;
+ -- Vg6: Räkna alltid om totalpriset från kalendernätter och bokningens sparade nattpris.
  NEW.total_price := (NEW.check_out - NEW.check_in) * NEW.nightly_price;
  RETURN NEW;
 END;

@@ -152,6 +152,8 @@ export default function BookingForm({ property }: { property: Property }) {
       router.replace(`/bookings/${encodeURIComponent(booking.booking_id)}/created`);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) setAvailabilityVersion(version => version + 1);
+      // Vg2: Vid 409 hämtas tillgängligheten igen eftersom någon kan ha bokat
+      // sedan kalendern laddades. setErrors nedan visar backendens felmeddelande.
       if (error instanceof ApiError && error.status === 401) {
         setNeedsLogin(true);
         signIn(form);

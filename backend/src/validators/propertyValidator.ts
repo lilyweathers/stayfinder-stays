@@ -15,6 +15,7 @@ const propertySchema = z
       .min(100, "Price per night must be at least 100"),
     max_guests: z.number().int().positive("Max guests must be greater than 0"),
   })
+  // Vg1: Avvisa extra fält, exempelvis owner_id, så att klienten inte kan ange ägare.
   .strict();
 
 const propertyOptionalSchema = propertySchema.partial();

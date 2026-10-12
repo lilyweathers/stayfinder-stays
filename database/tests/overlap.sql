@@ -1,6 +1,8 @@
 -- Run as administrator after 019. All fixtures are rolled back.
 -- Concurrency is tested separately by backend/scripts/verify-overlap-live.mjs.
 BEGIN;
+-- Vg2: Testa direkt i databasen, även mot bokningar som RLS döljer för gästen.
+-- ROLLBACK återställer testposterna; samtidiga anrop testas i det separata skriptet.
 INSERT INTO auth.users (id, email) VALUES
   ('a1900000-0000-4000-8000-000000000001', 'overlap-host@example.invalid'),
   ('a1900000-0000-4000-8000-000000000002', 'overlap-guest@example.invalid');

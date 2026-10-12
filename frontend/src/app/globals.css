@@ -179,6 +179,7 @@ textarea { font: inherit; padding: 12px; border: 1px solid #888; border-radius: 
 .property-filters { max-width: none; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); align-items: end; margin: 24px 0; }
 .property-filters input { width: 100%; min-width: 0; }
 .property-filters a { padding: 12px 0; }
+.property-filters > p { grid-column: 1 / -1; margin: 0; }
 
 .property-image { position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 6px; background: #e8eef0; display: grid; place-items: center; color: #52636b; margin-bottom: 20px; }
 .property-image img { object-fit: cover; }

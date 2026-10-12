@@ -1,6 +1,9 @@
 -- Apply after ownership migrations. Protect against old permissive allow-all
 -- booking policies: restrictive policies combine with them using AND.
 BEGIN;
+-- Vg1: AS RESTRICTIVE innebär att dessa villkor också måste vara uppfyllda.
+-- En annan tillåtande policy kan därför inte öppna åtkomst till andras bokningar.
+-- Gästen känns igen via guest_id; värden via det bokade boendets owner_id.
 DROP POLICY IF EXISTS bookings_participant_select_guard ON public.bookings;
 CREATE POLICY bookings_participant_select_guard ON public.bookings AS RESTRICTIVE
   FOR SELECT TO anon, authenticated USING (
