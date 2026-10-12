@@ -13,7 +13,7 @@ default branch main; an unauthenticated request to the branch URL returned HTTP
 
 ## Required deliverables
 
-- [ ] Commit and push the final backend, frontend, documentation, SQL, and requests.
+- [x] Commit and push the final backend, frontend, documentation, SQL, and requests.
 - [x] Confirm the teacher can open the repository and the correct branch.
 - [x] List fulfilled criteria in [criteria.md](criteria.md), with evidence.
 - [x] Complete [stayfinder.http](../requests/stayfinder.http) and its remaining cases.
@@ -41,7 +41,7 @@ and automated mocked tests contain intentionally fake passwords/tokens.
 | Setup | Current READMEs and environment examples; fresh-project base SQL provided, full fresh-project rehearsal not performed |
 | Credentials | No real-secret findings in 188 submission files or 476 reachable historical blobs; compared against local credentials without printing them |
 | Repository access | PUBLIC, default main; unauthenticated branch URL HTTP 200 |
-| Final submitted commit | Pending final commit and push |
+| Submitted content | [536bc23](https://github.com/lilyweathers/stayfinder-stays/commit/536bc23) pushed to origin/main; this checklist completion is recorded in the following documentation commit |
 
 All live runners reported cleanup complete. Expected statuses in the manual HTTP
 file are assertions; freshly observed runner results are in criteria-evidence.md.
