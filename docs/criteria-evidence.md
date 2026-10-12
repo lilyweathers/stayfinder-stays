@@ -4,6 +4,40 @@ Historical implementation milestones and verification records, preserved from cr
 Later results supersede earlier pending-status notes. For current completion status, see [criteria.md](criteria.md).
 Mocked API tests, direct database checks, and user-reported browser checks are distinct evidence sources.
 
+## Final submission audit — 2026-10-12
+
+- User reported completing the presentation and passing; rehearsal is complete.
+- Backend typecheck and production build passed. All 66 automated tests passed.
+  Three previously dated generic fixtures were moved to 2099 so past-date
+  validation no longer masks the CRUD/ownership behavior those tests exercise.
+- Frontend ESLint, generated-route TypeScript check and production build passed.
+- Reran every executable VG live runner sequentially against the hosted development
+  Supabase project using the existing ignored test accounts and normal user sessions:
+
+| Runner | Passing checks | Result |
+| --- | --- | --- |
+| verify-ownership-live.mjs | 36 | PASS; cleanup complete |
+| verify-overlap-live.mjs | 31 | PASS; cleanup complete |
+| verify-capacity-live.mjs | 22 | PASS; cleanup complete |
+| verify-status-live.mjs | 133 | PASS; cleanup complete |
+| verify-time-live.mjs | 28 | PASS; cleanup complete |
+| verify-price-live.mjs | 18 | PASS; cleanup complete |
+| verify-search-live.mjs | 36 | PASS; cleanup complete |
+
+Total: **304 passing live checks**. These include successful/rejected API calls,
+direct Supabase writes/RPCs independently of Hono, failed-write preservation,
+concurrent API/direct-database overlap protection and Stockholm date boundaries.
+The previously user-confirmed rollback SQL tests remain separate evidence;
+they were not rerun through SQL Editor during this audit.
+
+- Finalized stayfinder.http, corrected sort=asc/desc, authenticated validation
+  cases, added missing concrete boundary/denial requests and linked executable
+  concurrency/direct-database cases. Expected HTTP statuses are assertions,
+  while the runner results above are freshly observed evidence.
+- Replaced stale setup descriptions with current environment, route and SQL
+  instructions. Added an empty-project base schema; fresh-project execution
+  of the entire migration chain was not performed during this audit.
+
 ## Completed milestones
 
 ### Authentication (G1, G2, G14, G16)
@@ -861,3 +895,10 @@ The property filter form includes both dates; query values persist in the URL an
 User confirmed migration 025 and rollback-only database/tests/available_search.sql passed. The live runner then passed all 36 checks against the current API and hosted Supabase with disposable host-owned properties and guest bookings. Anonymous searches excluded pending overlaps for exact, contained, enclosing and both-edge intervals; confirmed bookings also blocked availability. Cancelled bookings were included and cancelling the confirmed blocker released availability. Both adjacent boundaries were allowed. Case-insensitive location, inclusive maximum price and capacity filters combined with ascending and descending price sorts correctly; zero maximum price returned no matches. Incomplete, impossible, same-day and past-date API periods were rejected. Direct anonymous RPC search returned the correct combined/sorted property rows and independently rejected null, past and invalid-order periods. Responses were checked for absence of booking identifiers and guest email fields.
 
 All disposable properties/bookings were removed and runner sessions logged out locally. Together with the 66 passing backend tests, TypeScript checks, frontend types/lint/production build and user-confirmed SQL tests, this completes VG7. No additional browser checks are claimed.
+
+- Credential review: no real-secret findings across 188 final submission files
+  and 476 reachable historical Git blobs. Pattern checks and exact comparison
+  against local environment keys/test-account passwords were performed without
+  printing credentials. Dummy mocked-test values were reviewed separately.
+- At the user's request, made the GitHub repository PUBLIC. Default branch is
+  main; the branch URL returned HTTP 200 without authentication on 2026-10-12.

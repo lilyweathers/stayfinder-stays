@@ -1,8 +1,6 @@
 # StayFinder frontend
 
-A Next.js frontend skeleton with TypeScript, App Router, ESLint, and plain CSS.
-The homepage is a placeholder. Assignment pages and backend integration are
-still to be implemented.
+A Next.js/TypeScript frontend with public property browsing, filters and availability search, authentication, booking previews and management, host property management, and profiles. It calls the Hono API with session cookies.
 
 ## Run in Bash
 
@@ -53,8 +51,7 @@ From `frontend/` in Bash, copy the example only if `.env.local` does not exist:
 cp -n .env.example .env.local
 ```
 
-`NEXT_PUBLIC_API_URL=http://localhost:3000` records the backend address for
-future browser requests. The placeholder homepage does not use it yet.
+`NEXT_PUBLIC_API_URL=http://localhost:3000` configures the backend address for browser and server API requests.
 Keep `.env.local` in the `frontend/` root, alongside `package.json`, not in `src/`.
 Restart the development server after changing environment values.
 
@@ -63,4 +60,4 @@ that prefix only for public values; never for a privileged Supabase key or a
 database password. Public variables are fixed when the production app is built.
 See the [Next.js environment guide](https://nextjs.org/docs/app/guides/environment-variables).
 
-Supabase frontend configuration will be added when implementing authentication.
+Supabase credentials stay in the backend. The frontend authenticates through the API.

@@ -74,8 +74,8 @@ test("booking CRUD uses Supabase", async (t) => {
     property_id: "property_1001",
     guest_name: "Test Guest",
     guest_email: "guest@example.com",
-    check_in: "2026-10-10",
-    check_out: "2026-10-12",
+    check_in: "2099-10-10",
+    check_out: "2099-10-12",
     guests: 2,
   };
   let stored: Booking | undefined;
@@ -232,8 +232,8 @@ test("missing properties return 404 and database errors return 500", async (t) =
 test("booking routes handle missing rows, database failures, and duplicate IDs", async (t) => {
   const body = {
     property_id: "property_1001", guest_name: "Test Guest",
-    guest_email: "guest@example.com", check_in: "2026-10-10",
-    check_out: "2026-10-12", guests: 2,
+    guest_email: "guest@example.com", check_in: "2099-10-10",
+    check_out: "2099-10-12", guests: 2,
   };
   let errorCode: string | undefined;
   t.mock.method(globalThis, "fetch", async (_input: unknown, init: RequestInit) => {

@@ -1,65 +1,56 @@
-# API request preparation
+# StayFinder request verification
 
-`stayfinder.http` contains HTTP request examples with {{variables}} and ###
-separators, suitable for an HTTP request editor such as VS Code REST Client.
-It is a manual template, not an automated test suite. Expected results are
-planned assertions and have not been recorded as actual outcomes.
+[stayfinder.http](stayfinder.http) is the final submission request file. Expected
+statuses describe the implemented contract; observed live results are in
+[criteria-evidence.md](../docs/criteria-evidence.md).
 
-## Use now
+Start the backend and use REST Client or equivalent tooling. Replace fixture
+UUIDs, future dates and actor cookies locally. Authenticate host, guest A and
+guest B separately, with separate cookie stores. Anonymous cases require a clean
+store: clients can attach cookies automatically. Include the configured frontend
+Origin on mutations. Keep credentials in private tooling or an ignored copy under
+requests/local/. Never commit cookies, passwords or JWTs.
 
-Start the API from backend/ with `npm run dev`. Send CURRENT requests individually.
-For property details, replace propertyId with an existing UUID from the list.
-The all-zero missing UUID must actually be absent. Invalid booking input currently
-reaches validation without login; once auth is added, authenticate for that case.
+Run cases individually with stated preconditions. Capture returned IDs. The main
+property has capacity 2 and rate 1000; the price case changes it to 1200.
+Confirmation/cancellation/deletion alter fixtures. Some cases require independent
+fixtures; this file is not an automatic suite. Run logout last. Verify denied
+writes leave rows unchanged. Delete disposable bookings before properties;
+retain administrator-created historical fixtures used for past-booking tests.
 
-Bash alternatives for basic reads:
+## Executable VG checks
 
-```bash
-curl -i http://localhost:3000/
-curl -i http://localhost:3000/properties
-curl -i http://localhost:3000/route-that-does-not-exist
+Apply migrations through 025. Configure the ignored confirmed test accounts as
+described in [ownership-live.md](ownership-live.md). Run sequentially from backend:
+
+```powershell
+node --import tsx scripts/verify-ownership-live.mjs
+node --import tsx scripts/verify-overlap-live.mjs
+node --import tsx scripts/verify-capacity-live.mjs
+node --import tsx scripts/verify-status-live.mjs
+node --import tsx scripts/verify-time-live.mjs
+node --import tsx scripts/verify-price-live.mjs
+node --import tsx scripts/verify-search-live.mjs
 ```
 
-## Use later
+They start an isolated loopback API using current source, create disposable
+fixtures, assert real HTTP/database results and clean up.
 
-PLANNED sections include auth routes and query parameters that do not exist yet.
-Review and update them against the final API contract before sending them.
-Current write routes lack the planned ownership and booking checks, so running
-these examples now could create invalid records rather than reject them.
+| Rule | Success, rejection and boundary coverage |
+| --- | --- |
+| VG1 | [Ownership](ownership-live.md): derived IDs, participant access, spoofing/nonowner denials, immutable relationships |
+| VG2 | [Overlap](overlap-live.md): free/adjacent/cancelled stays, overlapping writes, concurrent API/direct DB creates |
+| VG3 | [Capacity](capacity-live.md): exact capacity, oversized writes, forged capacity, unsafe reductions |
+| VG4 | [Status](status-live.md): host confirmation, participant cancellation, guest/unrelated denial, invalid transitions |
+| VG5 | [Time](time-live.md): today/future accepted, past creation/movement denied, Stockholm midnight/DST |
+| VG6 | [Price](price-live.md): trusted totals, frozen rates, changed rates for new bookings, forged API/direct DB values overwritten |
+| VG7 | [Search](search-live.md): occupied exclusion, free/adjacent/cancelled inclusion, filters/sorts, invalid/incomplete dates |
 
-Use disposable development fixtures: one property owned by the owner account
-(price 1000, capacity 2), guest A and guest B accounts, nonoverlapping bookings,
-and a separate past-check-in booking for time-rule tests. Refresh future dates
-when needed. Run each case with stated preconditions and verify persisted data
-as well as HTTP status. Isolate cases or reset fixtures between them; do not
-assume all requests form a single independent repeatable sequence.
+VG6 defeats tampering by discarding/overwriting prices: the request may succeed
+while the forged price is rejected as a source of truth.
 
-Use a request tool with separate cookie stores per actor. Anonymous cases need
-an empty cookie store: removing an explicit Cookie header does not disable a
-client's automatically stored cookies. Keep actual credentials in ignored local
-files or your tool's private settings. Never save tokens in the committed template.
-
-For future Bash login tests, curl can save Set-Cookie values in a local jar
-(`-c requests/local/guest-a.cookies`) and send them with
-`-b requests/local/guest-a.cookies`. Include
-`-H 'Origin: http://localhost:3001'` on mutations under the planned CSRF policy.
-Create requests/local first and keep it ignored by Git. Authenticate each actor
-separately; inspect logout and expiry behavior.
-
-## Complete before submission
-
-Convert every remaining comment-only case into concrete requests or a linked
-repeatable concurrency test. Pin final parameter names and exact expected statuses.
-Record actual results in docs/criteria.md. Confirm G1-G16 and every selected VG
-criterion, including successful and rejected calls. UI behavior also needs manual
-verification; API requests do not prove form errors or session persistence in UI.
-
-Direct database verification must use the Supabase REST endpoint or relevant
-RPC with a publishable/anon key and the actual user's access JWT. Test anonymous,
-owner, guest A, and guest B independently. Do not use a service-role key as proof
-of user permissions. Verify denied writes leave records unchanged; policy-filtered
-reads can hide rows rather than return 403. Add actual database calls once schema,
-functions, policies, and public contracts are known.
-
-Mocked backend tests do not replace these database checks. Do not describe this
-preparation template as a completed test report.
+Direct database checks use the publishable/anon key and real user JWT, never a
+service-role key as proof of RLS. SQL tests under database/tests/ run with rollback
+fixtures in Supabase SQL Editor. Historical fixtures need an administrator;
+normal API creation rejects past dates. See [SQL setup](../database/README.md)
+and [direct RLS checks](supabase-rls.md). Mocked tests alone do not prove RLS.

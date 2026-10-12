@@ -2,7 +2,7 @@
 
 Target: all G1–G16 and all VG1–VG7. The assignment requires all G criteria and at least four VG criteria for VG; this project selects all seven.
 
-## Current status (2026-10-10)
+## Current status (2026-10-12)
 
 - **G criteria: 16/16 complete.**
 - **VG criteria: 7/7 complete.**
@@ -54,18 +54,20 @@ behavior must be backed by database enforcement or database queries as appropria
 - Frontend totals are estimates. Database enforcement and live checks verify trusted saved pricing, capacity, overlap protection, and available-date search.
 - Overlap convention: [check_in, check_out), allowing adjacent stays. Date edits use the booking's saved nightly rate; unsafe capacity reductions below upcoming active bookings are blocked.
 
-## Remaining work
+## Final submission
 
-1. Finalize the submission request file with successful, rejected, and boundary cases for every selected VG criterion, using the verified live scripts and results as references.
-2. Update outdated request documentation and PLANNED labels to match the final API contract.
-3. Rehearse the app demonstration and explanations together for the 8–10 minute review.
+The user completed the presentation and reported passing on 2026-10-12.
+The final request file now reflects implemented routes, exact sort parameters,
+success/rejection cases and boundary cases; executable live runners cover every
+VG rule, including concurrency and direct Supabase enforcement.
+See [submission.md](submission.md) for final checks and repository delivery.
 
 ## Submission and oral review
 
 - [x] Repository covering backend and frontend: [stayfinder-stays](https://github.com/lilyweathers/stayfinder-stays).
 - [x] Final list of fulfilled criteria with supporting evidence: G1–G16 and VG1–VG7 above, with verification records in [criteria-evidence.md](criteria-evidence.md).
-- [ ] API request file covering successful and rejected calls, including every selected VG rule.
+- [x] API request file covering successful and rejected calls, including every selected VG rule.
 - [x] Complete database permission/constraint verification beyond mocked API tests: recorded direct Supabase checks, user-confirmed SQL tests, and concurrent overlap checks in [criteria-evidence.md](criteria-evidence.md).
-- [ ] Rehearse the app demonstration and explanations for the 8–10 minute review.
+- [x] Rehearse the app demonstration and explanations for the 8–10 minute review.
 
 Be ready to explain authentication versus authorization, session cookies, direct database protection, and why each rule belongs in the API, database, or both. Explain the code in your own words.

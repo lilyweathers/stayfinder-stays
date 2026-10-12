@@ -1,9 +1,11 @@
-# StayFinder API requests - preparation template
-# Run one request at a time against your DEVELOPMENT database.
-# Sections marked PLANNED are not implemented or verified yet.
-# Expected results below are targets, not recorded test outcomes.
-# Replace fixture IDs and dates with your own dedicated test records.
-# Keep actual credentials/cookies in local tooling, never in this file.
+# StayFinder final API requests
+# Run one request at a time against a development database with migrations through 025.
+# Expected results are assertions; observed live results are in docs/criteria-evidence.md.
+# Use disposable fixtures and separate cookie stores. Never commit credentials.
+# Set IDs from responses; keep actor cookies in private tooling or an ignored copy.
+# Run logout LAST. Cancellation/deletion change fixtures: follow each precondition.
+# For full boundary/concurrency/direct-database coverage, run the linked live runners
+# in requests/README.md. All seven VG rules have executable runners.
 
 @baseUrl = http://localhost:3000
 @frontendOrigin = http://localhost:3001
@@ -18,25 +20,25 @@
 @checkOut = 2030-06-13
 # dates must be future dates when running; configure the overlap fixture below.
 
-### CURRENT: API status - expected 200
+### API status - expected 200
 GET {{baseUrl}}/
 
-### CURRENT: property list - expected 200, array
+### property list - expected 200, array
 GET {{baseUrl}}/properties
 
-### CURRENT: property details - expected 200, object (replace propertyId)
+### property details - expected 200, object (replace propertyId)
 GET {{baseUrl}}/properties/{{propertyId}}
 
-### CURRENT: missing property - expected 404 (ensure missingId is absent)
+### missing property - expected 404 (ensure missingId is absent)
 GET {{baseUrl}}/properties/{{missingId}}
 
-### CURRENT: missing route - expected 404
+### missing route - expected 404
 GET {{baseUrl}}/route-that-does-not-exist
 
-### CURRENT: invalid booking body - expected 400 with validation errors
-# After authentication is implemented, add guest cookies to reach validation.
+### invalid booking body - expected 400 with validation errors
 POST {{baseUrl}}/bookings
 Origin: {{frontendOrigin}}
+Cookie: {{guestCookies}}
 Content-Type: application/json
 
 {
@@ -48,11 +50,7 @@ Content-Type: application/json
   "guests": 0
 }
 
-# Everything below is PLANNED. Revise contracts to match the final implementation.
-# Write requests create/change/delete real data; use disposable test fixtures only.
-# Existing routes currently lack authentication and VG rule enforcement.
-
-### PLANNED: G1 registration - account created or confirmation required
+### G1 registration - expected 201, possibly confirmation required
 # Supply email/password through local request tooling; these are placeholders.
 POST {{baseUrl}}/auth/register
 Origin: {{frontendOrigin}}
@@ -63,7 +61,7 @@ Content-Type: application/json
   "password": "REPLACE_LOCALLY_WITH_TEST_PASSWORD"
 }
 
-### PLANNED: G1 login - expected 200 and session Set-Cookie headers
+### G1 login - expected 200 and session Set-Cookie headers
 POST {{baseUrl}}/auth/login
 Origin: {{frontendOrigin}}
 Content-Type: application/json
@@ -73,20 +71,15 @@ Content-Type: application/json
   "password": "REPLACE_LOCALLY_WITH_TEST_PASSWORD"
 }
 
-### PLANNED: G2 current user - expected 200 and guest A identity
+### G2 current user - expected 200 and guest A identity
 GET {{baseUrl}}/auth/me
 Cookie: {{guestCookies}}
 
-### PLANNED: G2 anonymous current user - expected 401
+### G2 anonymous current user - expected 401
 # Ensure the request tool is not automatically attaching cookies.
 GET {{baseUrl}}/auth/me
 
-### PLANNED: G1 logout - cookies cleared; subsequent /auth/me is 401
-POST {{baseUrl}}/auth/logout
-Origin: {{frontendOrigin}}
-Cookie: {{guestCookies}}
-
-### PLANNED: G6 anonymous create - expected 401, no inserted row
+### G6 anonymous create - expected 401, no inserted row
 # Must use a clean client/cookie jar with no automatically attached session.
 POST {{baseUrl}}/properties
 Origin: {{frontendOrigin}}
@@ -100,7 +93,7 @@ Content-Type: application/json
   "max_guests": 2
 }
 
-### PLANNED: G6/VG1 owner create - expected 201 and derived owner identity
+### G6/VG1 owner create - expected 201 and derived owner identity
 # Save returned property_id locally; use that ID as propertyId for later tests.
 POST {{baseUrl}}/properties
 Origin: {{frontendOrigin}}
@@ -115,8 +108,8 @@ Content-Type: application/json
   "max_guests": 2
 }
 
-### PLANNED: VG1 nonowner property update - denied, property unchanged
-# Final status may be 403 or 404 under the documented visibility policy.
+### VG1 nonowner property update - denied, property unchanged
+# Expected 404: API filters by owner_id; verify the property is unchanged.
 PATCH {{baseUrl}}/properties/{{propertyId}}
 Origin: {{frontendOrigin}}
 Cookie: {{guestCookies}}
@@ -124,14 +117,14 @@ Content-Type: application/json
 
 { "title": "Unauthorized change" }
 
-### PLANNED: G5/G8 filtering and descending sort - expected 200
-# Parameter names are proposed, not implemented. Verify every returned value.
-GET {{baseUrl}}/properties?location=Test%20City&max_price=1000&guests=2&sort=price_desc
+### G5/G8 filtering and descending sort - expected 200
+# Verify every returned value satisfies the filters.
+GET {{baseUrl}}/properties?location=Test%20City&max_price=1000&guests=2&sort=desc
 
-### PLANNED: G8 ascending sort - expected 200, monotonic prices
-GET {{baseUrl}}/properties?sort=price_asc
+### G8 ascending sort - expected 200, monotonic prices
+GET {{baseUrl}}/properties?sort=asc
 
-### PLANNED: G9/VG3/VG6 booking at capacity - expected 201
+### G9/VG3/VG6 booking at capacity - expected 201
 # For the test property above: 3 nights * 1000 = 3000, status pending.
 # Ensure these dates are free before sending; save returned booking_id locally.
 POST {{baseUrl}}/bookings
@@ -148,20 +141,19 @@ Content-Type: application/json
   "guests": 2
 }
 
-### PLANNED: VG1 guest B reads guest A booking - denied/hidden
+### VG1 guest B reads guest A booking - expected 404
 GET {{baseUrl}}/bookings/{{bookingId}}
 Cookie: {{otherGuestCookies}}
 
-### PLANNED: VG1 guest A sees only permitted bookings - expected 200
+### VG1 guest A sees only permitted bookings - expected 200
 GET {{baseUrl}}/bookings
 Cookie: {{guestCookies}}
 
-### PLANNED: VG1 owner sees bookings for their property - expected 200
-# property_id query parameter is proposed; confirm the final route contract.
+### VG1 owner sees bookings for their property - expected 200
 GET {{baseUrl}}/bookings?property_id={{propertyId}}
 Cookie: {{ownerCookies}}
 
-### PLANNED: VG2 overlapping creation - expected 409 with clear conflict
+### VG2 overlapping creation - expected 409 with clear conflict
 # Fixture: guest A's pending/confirmed booking already occupies checkIn/checkOut.
 POST {{baseUrl}}/bookings
 Origin: {{frontendOrigin}}
@@ -177,7 +169,7 @@ Content-Type: application/json
   "guests": 1
 }
 
-### PLANNED: VG2 unchanged dates do not conflict with the same booking
+### VG2 unchanged dates do not conflict with the same booking
 # Run before confirmation/cancellation; expected 200, unchanged ID.
 PUT {{baseUrl}}/bookings/{{bookingId}}
 Origin: {{frontendOrigin}}
@@ -194,7 +186,23 @@ Content-Type: application/json
   "status": "pending"
 }
 
-### PLANNED: VG2 changing another booking into occupied dates - expected 409
+### Create guest B update fixture - expected 201
+# Save booking_id as otherBookingId. September dates must be free.
+POST {{baseUrl}}/bookings
+Origin: {{frontendOrigin}}
+Cookie: {{otherGuestCookies}}
+Content-Type: application/json
+
+{
+  "property_id": "{{propertyId}}",
+  "guest_name": "Test Guest B",
+  "guest_email": "guest-b@example.com",
+  "check_in": "2030-09-10",
+  "check_out": "2030-09-13",
+  "guests": 1
+}
+
+### VG2 changing another booking into occupied dates - expected 409
 # otherBookingId must belong to guest B and start on a different free interval.
 PUT {{baseUrl}}/bookings/{{otherBookingId}}
 Origin: {{frontendOrigin}}
@@ -211,7 +219,7 @@ Content-Type: application/json
   "status": "pending"
 }
 
-### PLANNED: VG3 capacity exceeded - denied with explicit capacity error
+### VG3 capacity exceeded - expected 400 with capacity error
 # Property capacity is 2; interval must otherwise be free.
 POST {{baseUrl}}/bookings
 Origin: {{frontendOrigin}}
@@ -227,8 +235,8 @@ Content-Type: application/json
   "guests": 3
 }
 
-### PLANNED: VG4 guest cannot confirm - denied, status remains pending
-# PUT uses full booking fields in the current API; confirm final update contract.
+### VG4 guest cannot confirm - denied, status remains pending
+# Expected 403; guest is a participant but cannot confirm.
 PUT {{baseUrl}}/bookings/{{bookingId}}
 Origin: {{frontendOrigin}}
 Cookie: {{guestCookies}}
@@ -244,7 +252,7 @@ Content-Type: application/json
   "status": "confirmed"
 }
 
-### PLANNED: VG4 owner confirms - expected 200, confirmed
+### VG4 owner confirms - expected 200, confirmed
 PUT {{baseUrl}}/bookings/{{bookingId}}
 Origin: {{frontendOrigin}}
 Cookie: {{ownerCookies}}
@@ -260,7 +268,11 @@ Content-Type: application/json
   "status": "confirmed"
 }
 
-### PLANNED: VG4 guest cancels confirmed booking - expected 200, cancelled
+### VG7 combined availability query - expected 200
+# Run before cancellation: propertyId must be excluded. After cancellation it is included.
+GET {{baseUrl}}/properties?check_in={{checkIn}}&check_out={{checkOut}}&location=Test%20City&max_price=1200&guests=2&sort=asc
+
+### VG4 guest cancels confirmed booking - expected 200, cancelled
 PUT {{baseUrl}}/bookings/{{bookingId}}
 Origin: {{frontendOrigin}}
 Cookie: {{guestCookies}}
@@ -276,7 +288,7 @@ Content-Type: application/json
   "status": "cancelled"
 }
 
-### PLANNED: VG4 edit cancelled booking - denied, cancelled row unchanged
+### VG4 edit cancelled booking - expected 409, cancelled row unchanged
 PUT {{baseUrl}}/bookings/{{bookingId}}
 Origin: {{frontendOrigin}}
 Cookie: {{guestCookies}}
@@ -292,7 +304,7 @@ Content-Type: application/json
   "status": "pending"
 }
 
-### PLANNED: G10 equal/reversed dates - expected 400
+### G10 equal/reversed dates - expected 400
 POST {{baseUrl}}/bookings
 Origin: {{frontendOrigin}}
 Cookie: {{guestCookies}}
@@ -307,7 +319,7 @@ Content-Type: application/json
   "guests": 1
 }
 
-### PLANNED: VG5 past check-in - denied with clear date error
+### VG5 past check-in - expected 400 with date error
 POST {{baseUrl}}/bookings
 Origin: {{frontendOrigin}}
 Cookie: {{guestCookies}}
@@ -322,7 +334,7 @@ Content-Type: application/json
   "guests": 1
 }
 
-### PLANNED: VG6 forged price is ignored - expected 201 and total_price 3000
+### VG6 forged price is ignored - expected 201 and total_price 3000
 # Run with a free interval and price_per_night still 1000; saved total is not 1.
 POST {{baseUrl}}/bookings
 Origin: {{frontendOrigin}}
@@ -339,7 +351,7 @@ Content-Type: application/json
   "total_price": 1
 }
 
-### PLANNED: VG6 change property price - existing saved totals unchanged
+### VG6 change property price - existing saved totals unchanged
 # Fetch the booking from the previous request afterwards; verify total remains 3000.
 PATCH {{baseUrl}}/properties/{{propertyId}}
 Origin: {{frontendOrigin}}
@@ -348,22 +360,312 @@ Content-Type: application/json
 
 { "price_per_night": 1200 }
 
-### PLANNED: VG7 combined availability query - expected 200
-# Proposed parameter names. Verify occupied properties excluded; cancelled ignored.
-GET {{baseUrl}}/properties?check_in={{checkIn}}&check_out={{checkOut}}&location=Test%20City&max_price=1200&guests=2&sort=price_asc
-
-### PLANNED: VG7 invalid search period - expected 400
+### VG7 invalid search period - expected 400
 GET {{baseUrl}}/properties?check_in=2030-07-13&check_out=2030-07-10
 
-# Additional fixture-driven cases to add before submission:
-# G1 invalid login; G6 anonymous update/delete; G12 permitted booking deletion.
-# G14 authenticated missing booking/property; malformed IDs; forbidden operations.
-# VG1 nonowner property deletion, booking update/delete, forged owner/user IDs.
-# VG2 adjacent intervals, cancelled booking ignored, simultaneous overlapping writes.
-# VG3 capacity checked on UPDATE and after capacity changes; forged client capacity.
-# VG4 owner cancellation, unrelated user denial, confirmed -> pending rejection.
-# VG5 existing past-check-in booking UPDATE/cancel/delete denied; today boundary.
-# VG6 direct DB tampering; unrelated updates preserve price; date-change price policy.
-# VG7 free and occupied fixtures, incomplete/invalid dates, filters and both sorts.
-# G15 and all VG database guarantees: direct Supabase requests using each user's JWT.
-# See requests/README.md and docs/criteria.md; this template is not final evidence.
+
+### G1 invalid login — expected 400 (deliberately invalid credentials)
+POST {{baseUrl}}/auth/login
+Origin: {{frontendOrigin}}
+Content-Type: application/json
+
+{
+  "email": "invalid@example.com",
+  "password": "deliberately-invalid-test-password"
+}
+
+### G6 anonymous update — expected 401, clean cookie store
+PATCH {{baseUrl}}/properties/{{propertyId}}
+Origin: {{frontendOrigin}}
+Content-Type: application/json
+
+{
+  "title": "Denied"
+}
+
+### G6 anonymous delete — expected 401, clean cookie store
+DELETE {{baseUrl}}/properties/{{propertyId}}
+Origin: {{frontendOrigin}}
+
+### G14 authenticated missing booking — expected 404
+GET {{baseUrl}}/bookings/{{missingId}}
+Cookie: {{guestCookies}}
+
+### G14 malformed deletion ID — expected 400
+DELETE {{baseUrl}}/properties/not-a-uuid
+Origin: {{frontendOrigin}}
+Cookie: {{ownerCookies}}
+
+### VG1 nonowner property deletion — expected 403, property unchanged
+DELETE {{baseUrl}}/properties/{{propertyId}}
+Origin: {{frontendOrigin}}
+Cookie: {{otherGuestCookies}}
+
+### VG1 unrelated booking update — expected 404, unchanged
+PUT {{baseUrl}}/bookings/{{bookingId}}
+Origin: {{frontendOrigin}}
+Cookie: {{otherGuestCookies}}
+Content-Type: application/json
+
+{
+  "property_id": "{{propertyId}}",
+  "guest_name": "Test Guest A",
+  "guest_email": "guest-a@example.com",
+  "check_in": "{{checkIn}}",
+  "check_out": "{{checkOut}}",
+  "guests": 2
+}
+
+### VG1 unrelated booking deletion — expected 404, unchanged
+DELETE {{baseUrl}}/bookings/{{bookingId}}
+Origin: {{frontendOrigin}}
+Cookie: {{otherGuestCookies}}
+
+### VG1 forged owner — expected 400, no inserted property
+POST {{baseUrl}}/properties
+Origin: {{frontendOrigin}}
+Cookie: {{ownerCookies}}
+Content-Type: application/json
+
+{
+  "title": "Spoofed owner",
+  "location": "Test City",
+  "description": "Disposable",
+  "price_per_night": 1000,
+  "max_guests": 2,
+  "owner_id": "{{missingId}}"
+}
+
+### VG1 forged guest — expected 400, no inserted booking
+POST {{baseUrl}}/bookings
+Origin: {{frontendOrigin}}
+Cookie: {{guestCookies}}
+Content-Type: application/json
+
+{
+  "property_id": "{{propertyId}}",
+  "guest_name": "Test Guest A",
+  "guest_email": "guest-a@example.com",
+  "check_in": "{{checkIn}}",
+  "check_out": "{{checkOut}}",
+  "guests": 2,
+  "guest_id": "{{missingId}}"
+}
+
+### VG2 adjacent stay — expected 201; original June interval active or cancelled
+POST {{baseUrl}}/bookings
+Origin: {{frontendOrigin}}
+Cookie: {{otherGuestCookies}}
+Content-Type: application/json
+
+{
+  "property_id": "{{propertyId}}",
+  "guest_name": "Test Guest B",
+  "guest_email": "guest-b@example.com",
+  "check_in": "{{checkOut}}",
+  "check_out": "2030-06-15",
+  "guests": 1
+}
+
+### VG2 cancelled booking does not block — expected 201; June original cancelled, no replacement yet
+POST {{baseUrl}}/bookings
+Origin: {{frontendOrigin}}
+Cookie: {{guestCookies}}
+Content-Type: application/json
+
+{
+  "property_id": "{{propertyId}}",
+  "guest_name": "Test Guest A",
+  "guest_email": "guest-a@example.com",
+  "check_in": "{{checkIn}}",
+  "check_out": "{{checkOut}}",
+  "guests": 2
+}
+
+### VG3 oversized UPDATE — expected 400; otherBookingId is guest B active fixture
+PUT {{baseUrl}}/bookings/{{otherBookingId}}
+Origin: {{frontendOrigin}}
+Cookie: {{otherGuestCookies}}
+Content-Type: application/json
+
+{
+  "property_id": "{{propertyId}}",
+  "guest_name": "Test Guest A",
+  "guest_email": "guest-a@example.com",
+  "check_in": "2030-09-10",
+  "check_out": "2030-09-13",
+  "guests": 3
+}
+
+### VG3 forged client capacity — expected 400 (unknown field)
+POST {{baseUrl}}/bookings
+Origin: {{frontendOrigin}}
+Cookie: {{guestCookies}}
+Content-Type: application/json
+
+{
+  "property_id": "{{propertyId}}",
+  "guest_name": "Test Guest A",
+  "guest_email": "guest-a@example.com",
+  "check_in": "{{checkIn}}",
+  "check_out": "{{checkOut}}",
+  "guests": 2,
+  "max_guests": 99
+}
+
+### VG3 unsafe capacity reduction — expected 409; replacement June booking has 2 guests
+PATCH {{baseUrl}}/properties/{{propertyId}}
+Origin: {{frontendOrigin}}
+Cookie: {{ownerCookies}}
+Content-Type: application/json
+
+{
+  "max_guests": 1
+}
+
+### VG4 unrelated cancellation — expected 404
+POST {{baseUrl}}/bookings/{{otherBookingId}}/cancel
+Origin: {{frontendOrigin}}
+Cookie: {{guestCookies}}
+
+### VG4 owner confirms guest B fixture — expected 200; otherBookingId pending
+POST {{baseUrl}}/bookings/{{otherBookingId}}/confirm
+Origin: {{frontendOrigin}}
+Cookie: {{ownerCookies}}
+
+### VG4 guest cannot delete cancelled original — expected 403, unchanged
+DELETE {{baseUrl}}/bookings/{{bookingId}}
+Origin: {{frontendOrigin}}
+Cookie: {{guestCookies}}
+
+### VG4 confirmed to pending rejected — expected 409; guest B fixture confirmed
+PUT {{baseUrl}}/bookings/{{otherBookingId}}
+Origin: {{frontendOrigin}}
+Cookie: {{otherGuestCookies}}
+Content-Type: application/json
+
+{
+  "property_id": "{{propertyId}}",
+  "guest_name": "Test Guest B",
+  "guest_email": "guest-b@example.com",
+  "check_in": "2030-09-10",
+  "check_out": "2030-09-13",
+  "guests": 1,
+  "status": "pending"
+}
+
+### VG4 owner cancellation — expected 200; guest B fixture confirmed
+POST {{baseUrl}}/bookings/{{otherBookingId}}/cancel
+Origin: {{frontendOrigin}}
+Cookie: {{ownerCookies}}
+
+# VG5 pastBookingId must be a historical fixture created by an administrator, not the API.
+@pastBookingId = REPLACE_WITH_PAST_BOOKING_UUID
+@today = REPLACE_WITH_CURRENT_STOCKHOLM_YYYY_MM_DD
+@tomorrow = REPLACE_WITH_NEXT_STOCKHOLM_YYYY_MM_DD
+
+### VG5 same-day accepted — expected 201; today/tomorrow free, local Stockholm dates
+POST {{baseUrl}}/bookings
+Origin: {{frontendOrigin}}
+Cookie: {{guestCookies}}
+Content-Type: application/json
+
+{
+  "property_id": "{{propertyId}}",
+  "guest_name": "Test Guest A",
+  "guest_email": "guest-a@example.com",
+  "check_in": "{{today}}",
+  "check_out": "{{tomorrow}}",
+  "guests": 1
+}
+
+### VG5 historical edit rejected — expected 409; saved check-in already past
+PUT {{baseUrl}}/bookings/{{pastBookingId}}
+Origin: {{frontendOrigin}}
+Cookie: {{guestCookies}}
+Content-Type: application/json
+
+{
+  "property_id": "{{propertyId}}",
+  "guest_name": "Test Guest A",
+  "guest_email": "guest-a@example.com",
+  "check_in": "2030-10-10",
+  "check_out": "2030-10-13",
+  "guests": 1
+}
+
+### VG5 historical cancellation rejected — expected 409
+POST {{baseUrl}}/bookings/{{pastBookingId}}/cancel
+Origin: {{frontendOrigin}}
+Cookie: {{guestCookies}}
+
+### VG5 historical deletion rejected — expected 409
+DELETE {{baseUrl}}/bookings/{{pastBookingId}}
+Origin: {{frontendOrigin}}
+Cookie: {{guestCookies}}
+
+# VG6 set pricedBookingId to the August forged-price response before rate change.
+@pricedBookingId = REPLACE_WITH_AUGUST_BOOKING_UUID
+
+### VG6 existing price remains 3000 after property rate becomes 1200 — expected 200
+GET {{baseUrl}}/bookings/{{pricedBookingId}}
+Cookie: {{guestCookies}}
+
+### VG6 date edit uses frozen 1000 rate — expected 200, total 4000; August 10–14 free
+PUT {{baseUrl}}/bookings/{{pricedBookingId}}
+Origin: {{frontendOrigin}}
+Cookie: {{guestCookies}}
+Content-Type: application/json
+
+{
+  "property_id": "{{propertyId}}",
+  "guest_name": "Test Guest A",
+  "guest_email": "guest-a@example.com",
+  "check_in": "2030-08-10",
+  "check_out": "2030-08-14",
+  "guests": 1,
+  "total_price": 1
+}
+
+### VG6 new booking uses updated 1200 rate — expected 201, total 3600
+POST {{baseUrl}}/bookings
+Origin: {{frontendOrigin}}
+Cookie: {{guestCookies}}
+Content-Type: application/json
+
+{
+  "property_id": "{{propertyId}}",
+  "guest_name": "Test Guest A",
+  "guest_email": "guest-a@example.com",
+  "check_in": "2030-11-10",
+  "check_out": "2030-11-13",
+  "guests": 1,
+  "total_price": 1
+}
+
+### VG7 incomplete period — expected 400
+GET {{baseUrl}}/properties?check_in={{checkIn}}
+
+### VG7 invalid calendar date — expected 400
+GET {{baseUrl}}/properties?check_in=2030-02-30&check_out=2030-03-03
+
+### VG7 free search with descending sort — expected 200; disposable property included
+GET {{baseUrl}}/properties?check_in=2030-12-10&check_out=2030-12-13&location=Test%20City&max_price=1200&guests=2&sort=desc
+
+### VG7 adjacent search — expected 200; checkout equal blocker check-in is allowed
+GET {{baseUrl}}/properties?check_in=2030-06-08&check_out={{checkIn}}&sort=asc
+
+### G12 host deletes cancelled original booking — expected 200; run last for this fixture
+DELETE {{baseUrl}}/bookings/{{bookingId}}
+Origin: {{frontendOrigin}}
+Cookie: {{ownerCookies}}
+
+# Cleanup: delete each disposable active booking as its guest/host and cancelled
+# booking as host before deleting the property; preserve historical fixtures.
+# VG2 simultaneous API and direct DB writes: backend/scripts/verify-overlap-live.mjs.
+# VG6 forged prices are discarded/overwritten, so the secure result is success at
+# the trusted price. Direct tampering assertions are in verify-price-live.mjs.
+### G1 logout - cookies cleared; subsequent /auth/me is 401
+POST {{baseUrl}}/auth/logout
+Origin: {{frontendOrigin}}
+Cookie: {{guestCookies}}

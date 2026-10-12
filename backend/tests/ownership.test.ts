@@ -9,7 +9,7 @@ const token = ["header", Buffer.from(JSON.stringify({ exp: 4102444800, sub: user
 const session = { access_token: token, refresh_token: "refresh", expires_at: 4102444800, expires_in: 3600, token_type: "bearer", user };
 const cookie = "sb-test-auth-token=base64-" + Buffer.from(JSON.stringify(session)).toString("base64url");
 const property = { title: "Test stay", description: "Test description", location: "Test location", price_per_night: 100, max_guests: 2 };
-const booking = { property_id: "p1", guest_name: "Guest", guest_email: user.email, check_in: "2026-10-10", check_out: "2026-10-12", guests: 1 };
+const booking = { property_id: "p1", guest_name: "Guest", guest_email: user.email, check_in: "2099-10-10", check_out: "2099-10-12", guests: 1 };
 function request(path: string, method: string, body?: unknown) {
   return app.request(path, { method, headers: { Cookie: cookie, "Content-Type": "application/json" }, ...(body ? { body: JSON.stringify(body) } : {}) });
 }

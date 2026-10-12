@@ -1,226 +1,66 @@
-# Database changes
+# Supabase SQL setup
 
-## Booking calendar availability
+The submitted app uses the existing development project with migrations through
+025. See [verification history](../docs/criteria-evidence.md). Installing npm
+packages does not create tables or apply SQL.
 
-Apply `020_property_availability.sql` after 019, then run
-`tests/property_availability.sql` in Supabase SQL Editor. The rollback-only test
-checks public date ranges, pending/confirmed blockers, cancelled/expired exclusions,
-missing/empty properties, cancellation refresh, and continued booking-row privacy.
+## Initial schema and migration order
 
-`GET /properties/:id/availability` exposes only upcoming blocked date ranges.
-Its restricted security-definer function reads across booking RLS without
-returning booking IDs, guests, emails, ownership, or status. Existing booking
-policies and the VG2 exclusion constraint remain unchanged.
+On the existing course database, properties/bookings already exist. Do not
+recreate them. On a fresh Supabase project, first run 000_base_schema.sql in SQL
+Editor as administrator. It fails if tables already exist. The bootstrap is
+provided for setup; this audit tested the existing hosted database, not a fresh
+project migration rehearsal.
 
-The creation form uses a custom calendar because native date inputs cannot disable
-individual booked dates. Past/booked nights are greyed out; checkout may equal
-the next booking's check-in, but ranges cannot cross blocked nights. Availability
-is refreshed every minute, on window focus, and after successful/conflicting writes.
-Loading/error states disable date selection and booking, with a retry action.
-The database remains authoritative if availability changes between selection and
-submission. On 2026-10-09 the user confirmed migration 020 and its SQL tests passed;
-all 13 live API/direct-RPC checks passed with disposable fixture cleanup complete.
-Browser visual/interactive verification remains pending.
+Apply schema migrations in numeric order from 001 through 025, with exceptions:
 
-## VG2 overlap protection
+- Skip 003, 005 and 009 on a fresh project. They are historical one-time data
+  assignments to original development accounts, not schema requirements.
+- Do not expose the app while only 001 is applied: its shared lecture policies
+  are replaced by ownership policies in 002.
+- Before 019 run tests/overlap_preflight.sql; before 021 run
+  tests/capacity_preflight.sql; before 023 run tests/price_preflight.sql.
+  Review conflicts and legacy price backfill before proceeding.
+- Apply 024 after 023 for decimal property rates, then 025 for availability search.
+  Migration 015 creates the profile-photos storage bucket.
 
-Apply `019_booking_overlap.sql` after the existing migrations through 018, as
-administrator in Supabase SQL Editor. First run `tests/overlap_preflight.sql`:
-both result sets should be empty. If existing active bookings overlap or have
-invalid intervals, review those IDs before applying; the migration aborts rather
-than modifying/cancelling existing bookings. Run `ROLLBACK` after any failure.
+Configure email Auth, Site URL http://localhost:3001, confirmation and development
+SMTP using [auth setup](../docs/auth-setup.md). Create your own confirmed test
+accounts; property creation assigns their UIDs.
 
-Migration 019 normalizes check_in/check_out to native PostgreSQL dates, rejects
-missing/empty/reversed intervals, and adds a partial GiST exclusion constraint
-for pending/confirmed bookings on the same property. Its `[check_in, check_out)`
-range permits adjacent stays. Cancelled bookings do not block dates. The database
-constraint applies independently of RLS visibility and protects concurrent writes.
-PostgreSQL exclusion failures (`23P01`) become a clear HTTP 409 on API create/update.
+## Existing installation
 
-Run `tests/overlap.sql` for rollback-only database checks, then use
-[the live overlap runner](../requests/overlap-live.md) to verify API behavior and
-simultaneous API/direct Supabase writes. On 2026-10-09 the user confirmed preflight,
-migration, and SQL tests passed; all 31 live checks subsequently passed with fixture
-cleanup complete. See docs/criteria-evidence.md for the observed results.
+Apply only missing migrations in order. Do not blindly rerun earlier files:
+001 weakens ownership policies; 004 restores older cancellation restrictions;
+007/010 describe soft deletion superseded by 011. Do not repeat 003/005/009 on
+new records. Final definitions result from the ordered migration chain.
 
-Use the existing development Supabase/PostgreSQL project. This folder is
-reserved for versioned SQL describing its schema, constraints, and policies.
-No database changes have been applied by the repository preparation steps.
+011 permanently removes deleted property rows, retains booking history and
+cancels upcoming active bookings. 012 lets hosts delete current/future cancelled
+bookings. Normal-role direct property DELETE is denied; use the checked RPC.
 
-Before adding migrations, record the current schema from the existing project
-and compare it with the columns documented in `backend/README.md`. Do not run
-new CREATE TABLE statements over existing tables blindly. Future SQL changes
-should be committed here so the database setup can be reproduced.
+## Direct enforcement tests
 
-Do not include passwords, API keys, connection strings, or real user data in
-schema files. The backend's connection settings stay in `backend/.env`.
+| Rule | Implementation migrations | SQL test |
+| --- | --- | --- |
+| Ownership/RLS | 002, 008 | tests/ownership.sql |
+| Overlap | 019 | tests/overlap.sql |
+| Capacity | 021 | tests/capacity.sql |
+| Status/roles | 004, 006, 012 | tests/status_roles.sql |
+| Stockholm time | 022 | tests/time_rules.sql |
+| Trusted/frozen prices | 023, 024 | tests/price.sql |
+| Availability search | 025 | tests/available_search.sql |
 
-## Auth lecture policies
+Run rollback-only tests in SQL Editor; expect PASS/no exception. After a failed
+transaction run ROLLBACK before retrying. Other tests cover property/account
+deletion, cancellation, public profiles and calendar availability.
+tests/backfill.sql records the earlier assignment before 005 and is historical.
 
-`001_auth_rls.sql` enables RLS and supplies the basic lecture policies for the
-existing properties and bookings tables. See [auth setup](../docs/auth-setup.md)
-for dashboard steps and policy review. These basic policies were applied to the stay-finder project on 2026-10-06.
+[Live runners](../requests/README.md) also verify API and direct Supabase calls
+with ordinary user JWTs, including simultaneous overlap attempts. They clean up
+disposable records. Denied writes must preserve rows; policy-filtered reads may
+return empty results. Do not use admin keys as proof of user permissions.
 
-## VG1 ownership migration
-
-Run these files in order in Supabase SQL Editor as the database administrator:
-
-1. `002_ownership.sql`: add owner_id/guest_id and replace the shared-access policies.
-2. `003_assign_existing_ownership.sql`: assign unowned existing records to the
-   user-requested account `test@gmail.com`. This transaction fails if that account
-   does not exist or its email matches multiple users; existing assignments stay intact.
-3. `tests/ownership.sql`: verify guest isolation, host visibility, nonowner denial,
-   spoofed ownership rejection, immutable ownership, and public property reads.
-   Test records are rolled back. If a test fails, run `ROLLBACK` before retrying.
-
-The backend changes require migration 002 before writes will work. Do not rerun
-001 after 002: its shared-access policies would weaken ownership protection.
-002 deliberately replaces all policies on these two tables, including custom
-policies; review it before applying. Public property reads remain available.
-
-Existing rows are preserved. Unassigned properties cannot be edited by regular
-users; unassigned bookings are visible only to their property's assigned host.
-New records use the authenticated user's ID, never a client-supplied owner.
-Guests and hosts may update/delete visible bookings under VG1. Status/role and
-time restrictions belong to the still-pending VG4/VG5 criteria.
-
-Bookings cannot be moved to another property or guest, and property ownership
-cannot be transferred through the public API/database roles. An administrator
-may perform deliberate ownership maintenance. Keep using request-scoped clients
-with the user's token; never substitute a service-role key in the backend.
-
-These migration and database verification scripts have not yet been executed
-against the hosted project. Mocked backend tests do not verify PostgreSQL RLS.
-
-## Booking cancellation
-
-Apply `004_booking_cancellation.sql` after the ownership migration. It blocks
-edits/deletions of cancelled bookings and bookings whose check-in date has
-passed, including direct database requests. The API exposes
-`POST /bookings/:id/cancel`; the frontend asks for confirmation and updates the
-returned booking's status without deleting the record. Guests and property
-owners can cancel pending/confirmed bookings. Same-day cancellation is allowed
-using Europe/Stockholm as the shared date boundary.
-
-Run `tests/cancellation.sql` after 004 to check the database rules with rollback-only
-fixtures. Neither the migration nor its live database checks have been run here.
-VG4 confirmation permissions/transitions and VG5 create-time date rules remain
-unfinished; this cancellation work does not complete those entire criteria.
-
-## Transfer original properties to the host account
-
-The user subsequently requested host@gmail.com own the six original properties.
-Run `005_assign_properties_to_host.sql` as administrator after creating that
-Supabase account. The script transfers exactly those six records and returns
-their ownership emails for verification. Booking guest assignments are preserved.
-The earlier backfill.sql property expectations describe the previous test@gmail.com
-assignment and will no longer match after this transfer. Use 005's final SELECT
-to verify the new property assignments. The user confirmed running the transfer
-on 2026-10-08. owner_id stores the account UID; the final query shows its email.
-
-Property POST automatically assigns the signed-in user's ID. A missing/null user
-returns 401; G6 and the ownership policy require authentication for creation.
-Nullable owner_id supports legacy/admin-managed records, not anonymous creation.
-
-## Host booking confirmation
-
-Apply `006_booking_status_roles.sql` after 002 and 004. New bookings must be
-pending; only their property's owner can transition pending to confirmed.
-Guest/host cancellation remains allowed by participant RLS; status reversal is
-blocked. Run `tests/status_roles.sql` to verify using rollback-only fixtures.
-These scripts have not been executed in the hosted database yet.
-The frontend management pages live under My Properties, and confirmation uses
-POST /bookings/:id/confirm. Property writes still require its owner.
-
-## Property deletion with booking cancellation
-
-Apply `007_property_deletion.sql` before running the updated backend: property
-queries now depend on deleted_at. DELETE /properties/:id calls the owner-checked
-delete_property RPC. It locks the property, cancels pending/confirmed bookings
-with check-in today or later (Europe/Stockholm), and sets deleted_at atomically.
-Active lists exclude the property. History is preserved; guests retain access
-to their booking records. Direct hard deletion and archiving through regular
-updates are blocked, and a database trigger blocks new bookings after deletion.
-The privileged RPC explicitly checks auth.uid() against owner_id; it does not
-accept an owner from the client. Only authenticated callers can execute it.
-
-Run `tests/property_deletion.sql` for rollback-only database verification. The
-migration and live checks have not been run here. Re-running older migrations
-that replace policies can remove these restrictions; apply migrations in order.
-
-## Separate guest and host booking views
-
-GET /bookings filters by the authenticated user's guest_id. Hosts use
-GET /bookings?property_id=...; the backend verifies property ownership first.
-Apply 008_booking_access.sql to add restrictive participant policies that also
-protect against any leftover shared-access permissive policy.
-009_assign_current_bookings_to_test.sql is a user-requested one-time reassignment
-of all current booking guest IDs to test@gmail.com. It preserves property owners
-and new API bookings still belong to their creator. Do not rerun 009 after other
-guests begin making new bookings. Hosted application of 008/009 is unverified.
-
-## Account deletion
-
-Apply `010_user_deletion.sql` after 007. Deleting an account through Supabase Auth
-archives all its properties and cancels their pending/confirmed bookings with
-check-in today or later (Europe/Stockholm). Past bookings and property rows are
-retained as history. Ownership/guest foreign keys use ON DELETE SET NULL so
-references do not block account deletion. This does not create a frontend
-account-deletion endpoint or grant users permission to delete accounts.
-Run `tests/user_deletion.sql` as administrator for rollback-only verification.
-The user confirmed the hosted database test passed on 2026-10-08. This is
-user-reported verification; test fixtures were rolled back.
-
-The frontend Profile page supports password-confirmed account deletion through
-DELETE /auth/account. Configure SUPABASE_ADMIN_KEY in backend/.env with a
-backend-only Supabase secret/service-role key and restart the backend. Keep
-SUPABASE_KEY as publishable/anon: the admin client is used only for deleting the
-verified current user's Auth account. Never put the admin key in frontend env.
-Migration 010 must be applied before using this action. Auth deletion activates
-its account-deletion trigger. API tests mock Supabase. The user confirmed a live
-temporary-account deletion on 2026-10-08, including removal of its property.
-
-## Permanent property deletion (supersedes soft deletion)
-
-Apply `011_permanent_property_deletion.sql` after 010. Deletion through Manage
-property or account deletion now permanently removes property rows and preserves
-all booking rows, including the old property UUID and a saved property title.
-Upcoming pending/confirmed bookings are cancelled; past statuses stay unchanged.
-This migration also permanently removes all previously archived property rows.
-Bookings for removed properties appear by default on the guest Bookings page,
-with their saved title and no property link. Access remains restricted to their
-guest once the property's owner relationship no longer exists.
-
-The property foreign key is removed so it cannot cascade-delete bookings or block
-deletion. The existing active-property insert trigger and immutable-identity
-trigger validate new bookings and prevent clients from moving them. Normal direct
-property DELETE remains blocked; owners must use the checked deletion RPC.
-Run `tests/property_deletion.sql` and `tests/user_deletion.sql` after 011 for
-rollback-only verification. The user confirmed application of 011 and a passing
-user_deletion.sql test on 2026-10-08 (user-reported; fixtures rolled back).
-The separate property_deletion.sql result after 011 remains unconfirmed.
-
-## Host deletion of cancelled bookings
-
-Apply `012_host_cancelled_booking_deletion.sql` after 011. It allows only the
-current property owner to delete cancelled bookings whose check-in is today or
-later (Europe/Stockholm). Guests still cannot delete cancelled bookings; all
-cancelled booking edits and all past booking deletions remain blocked.
-Run `tests/host_cancelled_booking_deletion.sql` for rollback-only verification.
-The user confirmed the migration, hosted tests, and browser flow work on
-2026-10-08. Do not reapply 004 afterward, as it
-would restore the older blanket cancelled-deletion restriction.
-
-## VG5 time enforcement (022)
-
-Apply `022_booking_time.sql` after 021. This adds independent create/update checks for the Europe/Stockholm calendar-date policy while retaining historical records. Run `tests/time_rules.sql`; fixtures roll back. See `requests/time-live.md` at the repository root for API/direct-Supabase verification and midnight/DST boundaries. Earlier notes describing VG4 status enforcement as pending have been superseded by the verified criteria checklist.
-
-## VG6 trusted saved prices (023)
-
-Review `tests/price_preflight.sql` before applying `023_booking_price.sql` after 022. Legacy prices are initialized from the current stored property rate; unknown historical rates are not recoverable. Missing-property bookings stop the migration for review. The trigger independently computes prices and retains the saved nightly rate on updates. Run `tests/price.sql` and follow the repository-root `requests/price-live.md` live instructions.
-
-Apply `024_property_price_precision.sql` after 023 to ensure property nightly prices use numeric(14,2). This repairs schemas whose original property rate column was integer. Existing rates and saved booking totals remain unchanged. Run price tests after 024.
-
-## VG7 public availability search (025)
-
-Apply `025_available_property_search.sql` after 024. The public scoped RPC returns only property rows while testing booking overlaps across guest RLS. It validates dates/filters and combines availability with filtering and sorting. Run `tests/available_search.sql` and follow repository-root `requests/search-live.md`.
+Keep real passwords/keys/connection strings out of SQL. Backend configuration
+stays in ignored backend/.env. Normal queries use the publishable key plus user
+session. The optional admin key is only for account deletion/registration photos.

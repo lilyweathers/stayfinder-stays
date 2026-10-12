@@ -1,141 +1,67 @@
 # StayFinder API
 
-A REST API built with Hono, Node.js, TypeScript, and Zod. Active property and
-booking routes use Supabase/PostgreSQL exclusively. No local JSON database or
-demo-data fallback is used. API tests define their own isolated response data.
+Hono, Node.js, TypeScript and Zod with Supabase Auth/PostgreSQL. See
+[root setup](../README.md), [SQL setup](../database/README.md) and
+[auth setup](../docs/auth-setup.md).
 
-## Requirements and setup
+## Configuration and checks
 
-- Node.js 20 or newer and npm
-- A development Supabase project with `properties` and `bookings` tables
-- Database permissions that allow the intended queries
-
-Run from `backend/` in Bash:
-
-```bash
-npm ci
-cp -n .env.example .env
-```
-
-Skip the copy command if `.env` already contains your configuration.
+Run npm ci in this folder; copy .env.example to .env only if absent.
 
 | Variable | Purpose |
 | --- | --- |
-| `SUPABASE_URL` | Your Supabase project URL; required |
-| `SUPABASE_KEY` | The project API key used by the backend; required |
-| `HONO_PORT` | API port; defaults to `3000` |
+| SUPABASE_URL | Required Supabase project URL |
+| SUPABASE_KEY | Required publishable/anon key; user sessions enforce RLS |
+| SUPABASE_ADMIN_KEY | Optional backend-only secret/service-role key for account deletion and registration photos |
+| HONO_PORT | Defaults to 3000 |
+| FRONTEND_URL | Allowed origin, defaults to http://localhost:3001 |
+| NODE_ENV | development locally; production enables secure cookies |
 
-Keep `.env` in the `backend/` root and restart the API after changing it. Missing
-`HONO_PORT` uses port 3000. Keep `.env` local. Never commit real keys or put privileged keys in frontend
-code. The backend uses one configured Supabase client and does not yet forward
-an authenticated user's session to the database.
+Commands: npm run dev, npm run typecheck, npm test, npm run build, npm start.
+Tests mock Supabase; [live checks](../requests/README.md) verify the real database.
 
-```bash
-npm run dev
-```
+## Routes
 
-Open `http://localhost:3000`, or the port configured in `.env`. Stop with Ctrl+C.
-On Windows, Git Bash supports these commands. In PowerShell, use `npm.cmd` if
-execution policy blocks `npm.ps1`.
-
-## Commands and tests
-
-```bash
-npm run typecheck  # check source TypeScript without generating output
-npm test           # compile and run API tests
-npm run build      # compile the API into dist/
-npm start          # run the compiled API
-```
-
-The tests replace Supabase HTTP requests with fake PostgREST responses. They
-cover property and booking CRUD, validation, missing records, database errors,
-duplicate booking IDs, and preservation of IDs from update URLs. They use dummy
-environment values and do not read or modify your real Supabase database.
-
-Tests model list responses as arrays and singular responses as objects. Routes
-that may find no record use `maybeSingle()` so absence produces a `404`; create
-routes use `single()` because creation should return exactly one record.
-
-## API routes
-
-| Method | Route | Purpose |
+| Method | Route | Access / behavior |
 | --- | --- | --- |
-| GET | `/` | API status text |
-| GET | `/properties` | List properties |
-| GET | `/properties/:id` | Get one property |
-| POST | `/properties` | Create a property |
-| PATCH | `/properties/:id` | Partially update a property |
-| DELETE | `/properties/:id` | Delete a property |
-| GET | `/bookings` | List bookings |
-| GET | `/bookings/:id` | Get one booking |
-| POST | `/bookings` | Create a booking |
-| PUT | `/bookings/:id` | Replace booking fields |
-| DELETE | `/bookings/:id` | Delete a booking |
+| GET | / | Public API status |
+| POST | /auth/register, /auth/login | Register (201, possibly confirmation) / login (200, cookies) |
+| GET | /auth/me | Verified user; anonymous 401 |
+| POST | /auth/logout | Clear session cookies |
+| PATCH | /auth/profile | Current user's name, bio, photo |
+| DELETE | /auth/account | Current user; requires password and admin key |
+| GET | /profiles/:id | Public name, avatar, bio |
+| GET | /properties | Public list, filters, availability search |
+| GET | /properties/:id | Public details |
+| GET | /properties/:id/availability, /properties/:id/host | Public date ranges / host name and avatar |
+| POST | /properties | Authenticated; derives owner_id |
+| PUT, PATCH | /properties/:id | Owner; full / partial fields |
+| DELETE | /properties/:id | Owner-checked RPC; retains booking history |
+| GET | /bookings | Guest's bookings; property_id query requires property ownership |
+| GET | /bookings/:id | Booking guest or host |
+| POST | /bookings | Derives guest_id, saves pending status and trusted price |
+| PUT | /bookings/:id | Guest or host; full fields; omitted status is preserved |
+| POST | /bookings/:id/confirm | Host, pending current/future booking |
+| POST | /bookings/:id/cancel | Guest or host, pending/confirmed current/future booking |
+| DELETE | /bookings/:id | Guest or host for active current/future; only host for cancelled |
 
-List routes return arrays. Successful create, single-record read, update, and
-delete routes return objects. Creates return `201`; other successful routes
-return `200`. Invalid bodies return `400` with an `errors` array, missing records
-return `404`, duplicate booking IDs return `409`, and database failures return
-`500`.
+Mutations require the configured frontend Origin; protected routes require session
+cookies. Identity is verified with getUser and the request user's JWT reaches RLS.
 
-## Database expectations
+Property filters: location (case-insensitive substring), max_price (inclusive),
+guests (minimum capacity), sort=asc|desc. Optional check_in/check_out must occur
+together and be valid today/future dates with checkout later than check-in.
+Availability excludes pending/confirmed overlaps using [check_in, check_out).
 
-The current code expects these columns:
+Creates return 201; normal reads/updates/deletes 200. Validation returns 400,
+authentication 401, role denial 403, absent/hidden rows 404, overlap/status/time
+conflicts 409, unexpected DB errors 500. Capacity prechecks return 400; a changed
+capacity rejected by PostgreSQL becomes 409. See [HTTP examples](../requests/stayfinder.http).
 
-- `properties`: `property_id`, `title`, `description`, `location`,
-  `price_per_night`, `max_guests`
-- `bookings`: `booking_id`, `property_id`, `guest_name`, `guest_email`,
-  `check_in`, `check_out`, `guests`, `status`
+## Database enforcement
 
-The database must generate property IDs and booking IDs when omitted. Booking
-status defaults to `pending` in the API when omitted. An update URL's ID takes
-precedence over an ID submitted in the body. Schema creation and migrations are
-not currently included in this repository.
-
-## Example request
-
-With the API running and an existing property ID, run in Bash:
-
-```bash
-curl -i -X POST http://localhost:3000/bookings \
-  -H "Content-Type: application/json" \
-  -d '{
-    "property_id": "property_1001",
-    "guest_name": "Alex Andersson",
-    "guest_email": "alex@example.com",
-    "check_in": "2026-10-10",
-    "check_out": "2026-10-12",
-    "guests": 2
-  }'
-```
-
-This creates real data in the configured development database. Replace the
-property ID and dates as appropriate.
-
-## Current assignment scope
-
-This is a starting point, not the completed assignment. API authentication,
-authorization, filtering, sorting, and booking business rules are not yet
-implemented. Booking date validation currently checks for nonempty strings,
-not valid dates or their order. Database policies cannot be verified by the
-mocked API tests. The Next.js frontend is a placeholder skeleton on port 3001; API integration
-is still to be implemented.
-
-## Supabase authentication
-
-See [the three-lecture setup guide](../docs/auth-setup.md) and
-[auth REST requests](../requests/auth.http). Public property reads stay open;
-property POST/PUT/PATCH/DELETE and all booking routes require authentication.
-The SQL policies must be applied in Supabase separately.
-
-## Ownership (VG1)
-
-Apply `database/002_ownership.sql` before using the updated backend. See
-[database setup](../database/README.md) for the existing-record assignment and
-rollback-only verification script. Properties are publicly readable, but only
-their owner may change/delete them. Booking rows are visible and mutable only
-to their guest or the property's owner, enforced by PostgreSQL RLS using each
-request's verified user token. The API derives owner_id/guest_id and rejects
-ownership fields in request bodies. Other users receive 404 for hidden rows;
-database ownership violations return 403. Identity/ownership and a booking's
-property cannot be transferred through regular database roles.
+Apply migrations through 025. Schema types are in src/types/database.ts.
+RLS protects owners and booking participants; triggers/constraints independently
+enforce immutable identity, overlap, capacity, transitions, Stockholm time rules
+and trusted prices. Client prices are discarded; date edits use the frozen rate.
+The admin client is restricted to account/photo operations. Never commit credentials.
