@@ -13,6 +13,8 @@ export default function Navigation() {
   const [user, setUser] = useState<AuthResponse["user"] | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [menu, setMenu] = useState({ pathname, open: false });
+  const menuOpen = menu.pathname === pathname && menu.open;
 
   useEffect(() => {
     let active = true;
@@ -56,8 +58,21 @@ export default function Navigation() {
   }
 
   return (
-    <nav aria-label="Main navigation">
-      <Link href="/">StayFinder</Link>
+    <nav className="site-navigation" aria-label="Main navigation" onKeyDown={event => {
+      if (event.key === "Escape") {
+        setMenu({ pathname, open: false });
+        event.currentTarget.querySelector<HTMLButtonElement>(".navigation-toggle")?.focus();
+      }
+    }}>
+      <Link className="navigation-brand" href="/" onClick={() => setMenu({ pathname, open: false })}>StayFinder</Link>
+      <button className="navigation-toggle" type="button" aria-expanded={menuOpen} aria-controls="navigation-links"
+        onClick={() => setMenu({ pathname, open: !menuOpen })}>
+        {menuOpen ? "Close menu" : "Menu"}
+      </button>
+      <div id="navigation-links" className={`navigation-links${menuOpen ? " is-open" : ""}`}
+        onClick={event => {
+          if ((event.target as HTMLElement).closest("a")) setMenu({ pathname, open: false });
+        }}>
       <Link href="/properties">Properties</Link>
       {user ? <>
         <Link href="/my-properties">My Properties</Link>
@@ -70,6 +85,7 @@ export default function Navigation() {
         <Link href="/login">Sign in</Link>
         <Link href="/register">Register</Link>
       </>}
+      </div>
       {error && <p role="alert">{error}</p>}
     </nav>
   );
