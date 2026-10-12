@@ -9,3 +9,6 @@ dist/
 # Local API test credentials and cookie jars
 requests/local/
 *.cookies
+
+# Vercel project links
+.vercel/

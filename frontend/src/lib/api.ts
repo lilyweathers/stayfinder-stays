@@ -4,7 +4,11 @@ import type { ApiErrorResponse, AuthResponse, RegisterResponse, PublicProfile } 
 import type { Booking, NewBooking } from "@/types/booking";
 import type { Property, PropertyInput, PropertyFilters, PropertyHost } from "@/types/property";
 
-const apiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000").replace(/\/$/, "");
+const apiUrl = (
+  (typeof window === "undefined" ? process.env.API_BACKEND_URL : undefined)
+  || process.env.NEXT_PUBLIC_API_URL
+  || "http://localhost:3000"
+).replace(/\/$/, "");
 
 export class ApiError extends Error {
   constructor(message: string, public status: number) {

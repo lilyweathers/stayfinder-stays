@@ -4,6 +4,10 @@ import { env } from "./env.js";
 
 const port = env.honoPort;
 
-serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`Server is running on http://localhost:${info.port}`);
-});
+if (!process.env.VERCEL) {
+  serve({ fetch: app.fetch, port }, (info) => {
+    console.log(`Server is running on http://localhost:${info.port}`);
+  });
+}
+
+export default app;
