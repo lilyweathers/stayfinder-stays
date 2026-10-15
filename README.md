@@ -1,5 +1,7 @@
 # StayFinder
 
+[Live site](https://stayfinder-stays.vercel.app/)
+
 Fullstack course project with a Next.js/TypeScript frontend and Hono/TypeScript
 API backed by Supabase Auth and PostgreSQL. Visitors browse, filter, sort and
 search available properties. Guests book and manage stays; hosts manage their
